@@ -8,38 +8,41 @@ import flask
 import os
 
 # My packages
-import Functions
-data, resolutions = Functions.load_data()
-print("Finished Importing")
+from Storage import Data
+dataset = Data()
+
 
 # Constants
 imageroute = '/MetroMapsEyeTracking/stimuli/'
 defaultmap = '03_Bordeaux_S2.jpg'
 
-def figure_layout(input_value):
+def figure_layout(new_mapname):
     """
     Creates a graph with the image of the input puzzle under it
 
     :author: Yuri Maas
     :param input_value: The name of the puzzle to be in the graph
     """
+    if new_mapname == None:
+        return {}
+
     return {
         'data': [
             {
-                'x': [0, resolutions['x'][int(input_value[:2]) - 1]],
-                'y': [0, resolutions['y'][int(input_value[:2]) - 1]],
+                'x': [0, dataset.get_resolution_X(new_mapname)],
+                'y': [0, dataset.get_resolution_Y(new_mapname)],
             }
         ],
         'layout': go.Layout(
             images=[
                 dict(
-                    source=imageroute + input_value,
+                    source=imageroute + new_mapname,
                     xref='x',
                     yref='y',
                     x=0,
                     y=0,
-                    sizex= resolutions['x'][int(input_value[:2]) - 1],
-                    sizey= resolutions['y'][int(input_value[:2]) - 1],
+                    sizex= dataset.get_resolution_X(new_mapname),
+                    sizey= dataset.get_resolution_Y(new_mapname),
                     xanchor='left',
                     yanchor='bottom',
                     opacity=0.8,
@@ -47,8 +50,8 @@ def figure_layout(input_value):
                 )
             ],
             title='Graph',
-            height= resolutions['y'][int(input_value[:2]) - 1],
-            width= resolutions['x'][int(input_value[:2]) - 1]
+            height= dataset.get_resolution_Y(new_mapname),
+            width= dataset.get_resolution_X(new_mapname)
         )
     }
 
@@ -70,12 +73,12 @@ app.layout = html.Div([
         },
         children=[
             dcc.Input(id= 'my-id', value= 'initial value', type='text'),
-            html.Label('Puzzle1:'),
+
+            html.Label('Puzzle:'),
             dcc.Dropdown(
                 id= 'puzzle-dropdown',
-                className= 'Puzzle2:',
                 value= defaultmap,
-                options = Functions.get_puzzles(data= data)
+                options = dataset.get_puzzlenames()
             )
         ]
     ),
