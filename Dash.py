@@ -17,6 +17,12 @@ imageroute = '/MetroMapsEyeTracking/stimuli/'
 defaultmap = '03_Bordeaux_S2.jpg'
 
 def figure_layout(input_value):
+    """
+    Creates a graph with the image of the input puzzle under it
+
+    :author: Yuri Maas
+    :param input_value: The name of the puzzle to be in the graph
+    """
     return {
         'data': [
             {
@@ -54,36 +60,51 @@ app.layout = html.Div([
     # Global Structure -> Input, Visualization, Output
     html.Div(
         id='Input',
+        style={
+            'width': '10%',
+            'display': 'inline-block',
+            'vertical-align': 'middle',
+            'marginTop' : 25,
+            'marginLeft' : 25,
+            'marginRight': 100
+        },
         children=[
             dcc.Input(id= 'my-id', value= 'initial value', type='text'),
+            html.Label('Puzzle1:'),
+            dcc.Dropdown(
+                id= 'puzzle-dropdown',
+                className= 'Puzzle2:',
+                value= defaultmap,
+                options = Functions.get_puzzles(data= data)
+            )
         ]
     ),
 
     html.Div(
         id='Visualization',
+        style={
+            'width': '60%',
+            'display': 'inline-block'
+        },
         children=[
             html.Div(id='my-div'),
+            dcc.Graph(
+                id='puzzle-graph',
+            ),
         ]
     ),
+
 
     html.Div(
         id='Output',
+        style={
+            'width': '20%',
+            'display': 'inline-block'
+        },
         children=[
 
         ]
     ),
-
-    # Graph with the puzzle under it, this is not in the normal Input, Vis, Output structure
-    dcc.Graph(
-        id='puzzle-graph',
-        figure= figure_layout(defaultmap),
-
-    ),
-    html.Label('Puzzle:'),
-    dcc.Dropdown(
-        id= 'puzzle-dropdown',
-        options = Functions.get_puzzles(data= data)
-    )
 ])
 
 
