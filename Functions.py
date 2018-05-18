@@ -13,62 +13,6 @@ Code snippet to import the dataset
 
 :Author: Yuri Maas
 """
-def load_data(file = "MetroMapsEyeTracking/all_fixation_data_cleaned_up.csv"):
-    """
-    Imports the necessary data
-
-    :author: Yuri Maas
-    :param file: The file location + name of file of the dataset
-    """
-    data = pd.read_csv(
-        file,
-        sep='\t',
-        encoding='ISO-8859-1'
-    )
-    resolutions = pd.read_excel(
-        "MetroMapsEyeTracking/stimuli/resolution.xlsx",
-        header=None,
-        names=['Place', 'x', 'y']
-    )[:24] #Show only the first 24 rows (only rows with resolutions)
-    data = preprocess_data(data, resolutions)
-    return data, resolutions
-
-
-def preprocess_data(data, resolutions):
-    """
-    Takes the data and prepossesses it
-
-    :author: Yuri Maas
-    :param data: The dataset to be preprocessed
-    :param resolutions: The resolutions of the maps
-    """
-    data = removeFixationsOutsideMap(data, resolutions, 0)
-    return data
-
-
-def removeFixationsOutsideMap(data, resolutions, max_pixels):
-    """
-    Loops over all the fixations and deletes it when the fixation
-    point is 'max_pixels' outside the map
-
-    :author: Yuri Maas
-    :param data: The dataframe with fixations to be removed
-    :param max_pixels: The maximum amount of pixels a fixation is allowed to be outside the map
-    """
-    for i in range(len(data)):
-        # Gets the mapresolution of the current fixation in the loop
-        currentRes = resolutions.get_values()[int(data['StimuliName'][i][:2]) - 1]
-
-        # If a fixation is outside the mapresolution (+- max_pixels), drop the fixation
-        if data['MappedFixationPointX'][i] > (currentRes[1] + max_pixels) or (
-                data['MappedFixationPointX'][i] < -max_pixels) or (
-                data['MappedFixationPointY'][i] > (currentRes[2] + max_pixels)) or (
-                data['MappedFixationPointY'][i] < -max_pixels):
-            data = data.drop([i])
-    data = data.reset_index()  # The dataframe index goes from 0 to len(data) without skipping
-    return data
-
-
 def Jaccard_withPackages(path1, path2):
     """
     Finds the amount of elements of the intersection of path1 and path2
@@ -172,15 +116,3 @@ def get_scanpath_coordinates(path):
     X = [path[i][5] for i in range(len(path))]
     Y = [path[i][6] for i in range(len(path))]
     return X, Y
-
-
-def get_puzzles(data):
-    """
-    Returns the names of the puzzles
-
-    :author: Yuri Maas
-    :param data: The dataset containing the puzzlenames
-    """
-    return [{'label': i[3:-4], 'value': i} for i in data['StimuliName'].unique()]
-
-
