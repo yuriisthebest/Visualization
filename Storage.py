@@ -7,9 +7,9 @@ class Data:
     This is so the data can't be
     """
     def __init__(self, file= "MetroMapsEyeTracking/all_fixation_data_cleaned_up.csv"):
-        self.__data, self.__resolutions = self.__load_data(file)
+        self.__data, self.__resolutions = self.load_data(file)
 
-    def __load_data(self, file):
+    def load_data(self, file):
         """
         Imports the necessary data
 
@@ -97,7 +97,7 @@ class Data:
 
     def get_puzzlenames(self):
         """
-        Returns all the names of the puzzles in a dict,
+        Returns all the names of the puzzles in a dictionary,
          The 'label' has the names without id numbers (The 01 - 24) and .jpg ending,
          The 'value' has the raw names, with id and .jpg
 

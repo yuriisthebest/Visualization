@@ -45,13 +45,19 @@ def figure_layout(new_mapname):
                     sizey= dataset.get_resolution_Y(new_mapname),
                     xanchor='left',
                     yanchor='bottom',
-                    opacity=0.8,
+                    #opacity=0.8,
                     layer='below'
                 )
             ],
             title='Graph',
-            height= dataset.get_resolution_Y(new_mapname),
-            width= dataset.get_resolution_X(new_mapname)
+            xaxis = dict(
+                range= [0, dataset.get_resolution_X(new_mapname)]
+            ),
+            yaxis = dict(
+                range= [0, dataset.get_resolution_Y(new_mapname)]
+            ),
+            #height= dataset.get_resolution_Y(new_mapname),
+            #width= dataset.get_resolution_X(new_mapname) - 300
         )
     }
 
@@ -60,40 +66,152 @@ def figure_layout(new_mapname):
 app = dash.Dash()
 
 app.layout = html.Div([
-    # Global Structure -> Input, Visualization, Output
+    # Global Structure ->   Input,
+    #                           - Open & Save
+    #                           - Panels
+    #                           - Visualization Options
+    #                           - Options for the visualizations
+    #                       Visualization,
+    #                           Plots
+    #                       Output
     html.Div(
-        id='Input',
+        id='Input-column',
         style={
-            'width': '10%',
+            'width': '12%',
             'display': 'inline-block',
             'vertical-align': 'middle',
-            'marginTop' : 25,
-            'marginLeft' : 25,
-            'marginRight': 100
+            'marginLeft' : 5,
+            'marginRight': 5
         },
         children=[
-            dcc.Input(id= 'my-id', value= 'initial value', type='text'),
+            html.H1('Input'),
 
-            html.Label('Puzzle:'),
-            dcc.Dropdown(
-                id= 'puzzle-dropdown',
-                value= defaultmap,
-                options = dataset.get_puzzlenames()
-            )
+            html.Div(
+                id= 'Input-head',
+                children=[
+                    html.H3('Open & Save'),
+                    dcc.Upload(
+                        id='Input-head-upload',
+                        multiple= False,
+                        style= {
+                            'width': '100%',
+                            'heigth': '60px',
+                            'margin': '10px'
+                        },
+                        children= html.Div(
+                            html.Button('Upload File')
+                        )
+                    ),
+
+                    # What are we saving here?????
+                    dcc.Upload(
+                        id='Input-head-save',
+                        multiple= False,
+                        style= {
+                            'width': '100%',
+                            'heigth': '60px',
+                            'margin': '10px'
+                        },
+                        children=[
+                            html.Button('Save as')
+                        ]
+                    ),
+                    html.Hr()
+                ]
+            ),
+
+            html.Div(
+                id= 'Input-panels',
+                children=[
+                    dcc.RadioItems(
+                        options=[]
+                    )
+                ]
+            ),
+
+            html.Div(
+                id= 'Input-vis_options'
+            ),
+
+            html.Div(
+                id= 'Input-add_options'
+            ),
+
+            html.Div(
+                id= 'THE REST, WIP',
+                children=[
+                    html.Label('Puzzle:'),
+                    dcc.Dropdown(
+                        id= 'puzzle-dropdown',
+                        value= defaultmap,
+                        options = dataset.get_puzzlenames()
+                    )
+                ]
+            ),
         ]
     ),
+
 
     html.Div(
         id='Visualization',
         style={
-            'width': '60%',
-            'display': 'inline-block'
+            'width': '65%',
+            'display': 'inline-block',
+            'marginLeft': 5,
+            'marginRight': 5
         },
         children=[
-            html.Div(id='my-div'),
-            dcc.Graph(
-                id='puzzle-graph',
+            html.H1('Plots'),
+
+            ### The first column of graphs
+            html.Div(
+                id= 'Visualization-C1',
+                style = {
+                    'width': '45%',
+                    'display': 'inline-block',
+                },
+                children= [
+                    html.Div(
+                        id= 'Visualization-C1-1',
+                        children= dcc.Graph(
+                            id='puzzle-graph1-1',
+                        ),
+                    ),
+                    html.Hr(),
+
+                    html.Div(
+                        id= 'Visualization-C1-2',
+                        children= dcc.Graph(
+                            id='puzzle-graph1-2',
+                        ),
+                    ),
+                ]
             ),
+
+            ### The second column of graphs
+            html.Div(
+                id= 'Visualization-C2',
+                style={
+                    'width': '45%',
+                    'display': 'inline-block',
+                },
+                children= [
+                    html.Div(
+                        id='Visualization-C2-1',
+                        children=dcc.Graph(
+                            id='puzzle-graph2-1',
+                        ),
+                    ),
+                    html.Hr(),
+
+                    html.Div(
+                        id='Visualization-C2-2',
+                        children=dcc.Graph(
+                            id='puzzle-graph2-2',
+                        ),
+                    ),
+                ]
+            )
         ]
     ),
 
@@ -101,35 +219,38 @@ app.layout = html.Div([
     html.Div(
         id='Output',
         style={
-            'width': '20%',
+            'width': '12%',
             'display': 'inline-block'
         },
         children=[
-
+            html.H1('Information'),
+            html.Div(
+                id= 'Information-1'
+            )
         ]
     ),
 ])
 
 
+
+
+
 """"Callbacks"""
-# Callback to tutorial
-@app.callback(
-    Output('my-div', 'children'),
-    [Input('my-id', 'value')]
-)
-def update_output_div(input_value):
-    return 'You\'ve entered "{}'.format(input_value)
-
-
 # Callback to update graph
 @app.callback(
-    Output('puzzle-graph', 'figure'),
+    Output('puzzle-graph1-1', 'figure'),
     [Input('puzzle-dropdown', 'value')]
 )
 def update_graph_img(input_value):
     return figure_layout(input_value)
 
 
+
+
+
+
+
+# Server Things
 @app.server.route('{}<image_path>.jpg'.format(imageroute))
 def serve_image(image_path):
     image_name = '{}.jpg'.format(image_path)
