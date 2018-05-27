@@ -2,7 +2,7 @@
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output
+from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import flask
 import os
@@ -114,6 +114,16 @@ app.layout = html.Div([
                         children=[
                             html.Button('Save as')
                         ]
+                    ),
+                    html.Hr(),
+                    html.Button(
+                        'Submit Graph',
+                        id= 'Submit',
+                        title= 'Press this button to '
+                               'submit the choosen options to \'Plots\'',
+                        style= {
+                            
+                        }
                     ),
                     html.Hr()
                 ]
@@ -254,9 +264,10 @@ app.layout = html.Div([
 # Callback to update graph
 @app.callback(
     Output('puzzle-graph1-1', 'figure'),
-    [Input('puzzle-dropdown', 'value')]
+    [Input('Submit', 'n_clicks')],
+     state = [State('puzzle-dropdown', 'value')]
 )
-def update_graph_img(input_value):
+def update_graph_img(n_clicks, input_value):
     return figure_layout(input_value)
 
 
