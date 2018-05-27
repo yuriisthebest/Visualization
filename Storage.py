@@ -4,7 +4,9 @@ import pandas as pd
 class Data:
     """
     Class to store the dataset and resolutions in
-    This is so the data can't be
+    This is so the data can't be changed after loading
+
+    :author: Yuri Maas
     """
     def __init__(self, file= "MetroMapsEyeTracking/all_fixation_data_cleaned_up.csv"):
         self.__data, self.__resolutions = self.load_data(file)

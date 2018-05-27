@@ -14,7 +14,7 @@ dataset = Data()
 
 # Constants
 imageroute = '/MetroMapsEyeTracking/stimuli/'
-defaultmap = '03_Bordeaux_S2.jpg'
+defaultmap = '03_Bordeaux_S1.jpg'
 
 def figure_layout(new_mapname):
     """
@@ -79,7 +79,6 @@ app.layout = html.Div([
         style={
             'width': '12%',
             'display': 'inline-block',
-            'vertical-align': 'middle',
             'marginLeft' : 5,
             'marginRight': 5
         },
@@ -124,13 +123,29 @@ app.layout = html.Div([
                 id= 'Input-panels',
                 children=[
                     dcc.RadioItems(
-                        options=[]
-                    )
+                        options=[
+                            {'label': 'Panel 1 (Top-Left)', 'value': 0},
+                            {'label': 'Panel 2 (Top-Right)', 'value': 1},
+                            {'label': 'Panel 3 (Bottom-Left)', 'value': 2},
+                            {'label': 'Panel 4 (Bottom-Right)', 'value': 3}
+                        ],
+                        labelStyle= {'display': 'inline-block'}
+                    ),
+                    html.Hr()
                 ]
             ),
 
             html.Div(
-                id= 'Input-vis_options'
+                id= 'Input-vis_options',
+                children=[
+                    dcc.RadioItems(
+                        options=[
+                            {'label': 'Adjacency Matrix', 'value': 0},
+                            {'label': 'Metro Map', 'value': 1}
+                        ],
+                        labelStyle= {'display': 'inline-block'}
+                    )
+                ]
             ),
 
             html.Div(
@@ -167,7 +182,7 @@ app.layout = html.Div([
             html.Div(
                 id= 'Visualization-C1',
                 style = {
-                    'width': '45%',
+                    'width': '48%',
                     'display': 'inline-block',
                 },
                 children= [
@@ -192,7 +207,7 @@ app.layout = html.Div([
             html.Div(
                 id= 'Visualization-C2',
                 style={
-                    'width': '45%',
+                    'width': '48%',
                     'display': 'inline-block',
                 },
                 children= [
@@ -257,4 +272,5 @@ def serve_image(image_path):
     return flask.send_from_directory(os.getcwd() + imageroute, image_name)
 
 if __name__ == '__main__':
-    app.run_server(debug=True)
+    # Host doesn't matter, it just tells the app to be available in network
+    app.run_server(debug=True, host= '0.0.0.0')
