@@ -9,57 +9,13 @@ import os
 
 # My packages
 from Storage import Data
+from DashUpdates import Graphs, Layout
 dataset = Data()
 
 
 # Constants
 imageroute = '/MetroMapsEyeTracking/stimuli/'
 defaultmap = '03_Bordeaux_S1.jpg'
-
-def figure_layout(new_mapname):
-    """
-    Creates a graph with the image of the input puzzle under it
-
-    :author: Yuri Maas
-    :param input_value: The name of the puzzle to be in the graph
-    """
-    if new_mapname == None:
-        return {}
-
-    return {
-        'data': [
-            {
-                'x': [0, dataset.get_resolution_X(new_mapname)],
-                'y': [0, dataset.get_resolution_Y(new_mapname)],
-            }
-        ],
-        'layout': go.Layout(
-            images=[
-                dict(
-                    source=imageroute + new_mapname,
-                    xref='x',
-                    yref='y',
-                    x=0,
-                    y=0,
-                    sizex= dataset.get_resolution_X(new_mapname),
-                    sizey= dataset.get_resolution_Y(new_mapname),
-                    xanchor='left',
-                    yanchor='bottom',
-                    #opacity=0.8,
-                    layer='below'
-                )
-            ],
-            title='Graph',
-            xaxis = dict(
-                range= [0, dataset.get_resolution_X(new_mapname)]
-            ),
-            yaxis = dict(
-                range= [0, dataset.get_resolution_Y(new_mapname)]
-            ),
-            #height= dataset.get_resolution_Y(new_mapname),
-            #width= dataset.get_resolution_X(new_mapname) - 300
-        )
-    }
 
 
 
@@ -74,6 +30,17 @@ app.layout = html.Div([
     #                       Visualization,
     #                           Plots
     #                       Output
+
+    # Store data
+    html.Div(
+        id= 'hidden',
+        style= {'display': 'none'},
+        children= [
+            html.Div(),
+            html.Div()
+        ]
+    ),
+
     html.Div(
         id='Input-column',
         style={
@@ -132,12 +99,39 @@ app.layout = html.Div([
             html.Div(
                 id= 'Input-panels',
                 children=[
+                    dcc.Dropdown(
+                        id= 'Input-panels-dropdown',
+                        options= [
+                            {'label': '1 Panel', 'value': 1},
+                            {'label': '4 Panels', 'value': 4}
+                        ],
+                        searchable= False,
+                        placeholder= 'Select an amount of panels'
+                    ),
+
                     dcc.RadioItems(
+                        id= 'Input-panels-panels',
                         options=[
-                            {'label': 'Panel 1 (Top-Left)', 'value': 0},
-                            {'label': 'Panel 2 (Top-Right)', 'value': 1},
-                            {'label': 'Panel 3 (Bottom-Left)', 'value': 2},
-                            {'label': 'Panel 4 (Bottom-Right)', 'value': 3}
+                            {'label': 'Panel 1', 'value': 0},
+                            {'label': 'Panel 2', 'value': 1},
+                            {'label': 'Panel 3', 'value': 2},
+                            {'label': 'Panel 4', 'value': 3}
+                        ],
+                        labelStyle= {'display': 'inline-block',
+                                     'marginRight': 60}
+                    ),
+                    html.Hr()
+                ]
+            ),
+
+            html.Div(
+                id= 'Input-vis_types',
+                children=[
+                    dcc.RadioItems(
+                        id= 'Input-vis_types-types',
+                        options=[
+                            {'label': 'Adjacency Matrix', 'value': 0},
+                            {'label': 'Metro Map', 'value': 1}
                         ],
                         labelStyle= {'display': 'inline-block'}
                     ),
@@ -146,31 +140,14 @@ app.layout = html.Div([
             ),
 
             html.Div(
-                id= 'Input-vis_options',
-                children=[
-                    dcc.RadioItems(
-                        options=[
-                            {'label': 'Adjacency Matrix', 'value': 0},
-                            {'label': 'Metro Map', 'value': 1}
-                        ],
-                        labelStyle= {'display': 'inline-block'}
-                    )
-                ]
-            ),
-
-            html.Div(
-                id= 'Input-add_options'
-            ),
-
-            html.Div(
-                id= 'THE REST, WIP',
-                children=[
+                id= 'Input-add_options',
+                children= [
                     html.Label('Puzzle:'),
                     dcc.Dropdown(
-                        id= 'puzzle-dropdown',
-                        value= defaultmap,
-                        options = dataset.get_puzzlenames()
-                    )
+                        id='Input-add_options-puzzle_dropdown',
+                        value=defaultmap,
+                        options=dataset.get_puzzlenames()
+                    ),
                 ]
             ),
         ]
@@ -260,19 +237,102 @@ app.layout = html.Div([
 
 
 
-""""Callbacks"""
-# Callback to update graph
+"""Callbacks"""
+# Callback to update the visualization plot
 @app.callback(
-    Output('puzzle-graph1-1', 'figure'),
+    Output('Visualization', 'children'),
     [Input('Submit', 'n_clicks')],
-     state = [State('puzzle-dropdown', 'value')]
+     state = [State('Input-add_options-puzzle_dropdown', 'value'),
+              State('Input-panels-dropdown', 'value'),
+              State('Input-panels-panels', 'value')]
 )
-def update_graph_img(n_clicks, input_value):
-    return figure_layout(input_value)
+def update_visualization(n_clicks, input_puzzle, amount_panels, panel):
+    '''
+    Updates the visualization based on the given parameters
+
+    :author: Yuri Maas
+    :param n_clicks: Usefull to check whether the button has been pressed, no other uses
+    :param input_puzzle: The name of the new map
+    :param amount_panels: The total amount of requested panels
+    :param panel: The panel to update
+    :return: Layout with a single graph
+    '''
+    if amount_panels == 1:
+        return Layout.single_graph(
+            Graphs.test_map(input_puzzle, dataset)
+        )
+    if amount_panels == 4:
+        list_of_graphs = [None, None, None, None]
+        list_of_graphs[panel] = Graphs.test_map(input_puzzle, dataset)
+        return Layout.multiple_graphs(
+            list_of_graphs
+        )
+    return Layout.no_graphs()
 
 
+# Callback to change the amount of panels based on the panel dropdown
+@app.callback(
+    Output('Input-panels-panels', 'options'),
+    [Input('Input-panels-dropdown', 'value')]
+)
+def update_options(input_value):
+    '''
+    Adds RadioItems equal to the desired amount of visualization panels
 
+    :author: Yuri Maas
+    :param input_value: Amount of desired panels
+    :return: #input_value RadioItem options
+    '''
+    if input_value == None:
+        return []
+    options = [{'label': 'Panel {}'.format(i+1), 'value': i} for i in range(input_value)]
+    return options
 
+# Add additional options once a visualization type has been chosen
+@app.callback(
+    Output('Input-add_options', 'children'),
+    [Input('Input-vis_types-types', 'value')]
+)
+def update_additional_options(input_type):
+
+    # 0 = Adjacency Matrix
+    # 1 = Metro Map
+    if input_type == 0:
+        return [
+            # Choose Puzzle, Choose Adjacency matrix type
+            html.Label('Puzzle:'),
+            dcc.Dropdown(
+                id='Input-add_options-puzzle_dropdown',
+                value=defaultmap,
+                options=dataset.get_puzzlenames()
+            ),
+            dcc.RadioItems(
+                id='Input-add_options-adjacency',
+                options=[
+
+                ]
+            )
+        ]
+
+    if input_type == 1:
+        return [
+            # Choose puzzle, Choose map overlay
+            html.Label('Puzzle:'),
+            dcc.Dropdown(
+                id='Input-add_options-puzzle_dropdown',
+                value=defaultmap,
+                options=dataset.get_puzzlenames()
+            ),
+            dcc.RadioItems(
+                id='Input-add_options-metro_map',
+                options=[
+                    {'label': 'Gaze plot', 'value': 0},
+                    {'label': 'Attention map', 'value': 1}
+                ],
+                labelStyle= {'display': 'inline-block',
+                             'marginRight': 20}
+            ),
+        ]
 
 
 
