@@ -43,7 +43,7 @@ class Layout:
             html.H1('Plots'),
 
             html.Div(
-                id= 'Visualization-1',
+                id= 'graph1',
                 style = {
                     'width': '98%',
                     'display': 'inline-block'
@@ -55,19 +55,16 @@ class Layout:
         ]
 
     @staticmethod
-    def multiple_graphs(list_of_graphs):
+    def four_graphs(graph1, graph2, graph3, graph4):
         '''
         Creates a layout for the 'Plots' section for a Dash Application based on an input graph
         Should be called by a callback on the children of the section with id='Visualization'
+        Doesn't generate any graphs
 
         :author: Yuri Maas
         :param list_of_graphs: An array with graphs that should be shown in the 'Plots' section
         :return: The layout for the 'Plots' section of the Dash application
         '''
-        graph1 = list_of_graphs[0]
-        graph2 = list_of_graphs[1]
-        graph3 = list_of_graphs[2]
-        graph4 = list_of_graphs[3]
         return [
             html.H1('Plots'),
 
@@ -80,14 +77,15 @@ class Layout:
                 },
                 children= [
                     html.Div(
-                        id= 'Visualization-C1-1',
-                        children= graph1
+                        id= 'graph1',
+                        children = graph1
                     ),
                     html.Hr(),
 
                     html.Div(
-                        id= 'Visualization-C1-2',
-                        children= graph3 # Graph3 because it's bottom-left
+                        # Graph3 because it's bottom-left
+                        id= 'graph3',
+                        children = graph3
                     ),
                 ]
             ),
@@ -101,23 +99,52 @@ class Layout:
                 },
                 children= [
                     html.Div(
-                        id='Visualization-C2-1',
-                        children= graph2 # Graph 2 because it's top-right
+                        # Graph 2 because it's top-right
+                        id='graph2',
+                        children = graph2
                     ),
                     html.Hr(),
 
                     html.Div(
-                        id='Visualization-C2-2',
-                        children= graph4
+                        id='graph4',
+                        children = graph4
                     ),
                 ]
             )
+        ]
+
+    @staticmethod
+    def select_puzzle(dataset, initial_map= None):
+        '''
+        Template to create a dropdown from where a user can select a puzzle
+        Also shows a miniature version underneith the dropdown
+
+        :author: Yuri Maas
+        :param dataset: The dataset used for the data and pictures
+        :param initial_map: The initial map that's selected
+        :return: The input layout to select a puzzle
+        '''
+        return [
+            html.Hr(),
+            html.Label('Puzzle:'),
+            dcc.Dropdown(
+                id='Input-add_options-puzzle_dropdown',
+                value= initial_map,
+                options=dataset.get_puzzlenames()
+            ),
+            html.Img(
+                id='puzzle-image',
+                style= {
+                    'width': '100%'
+                }
+            ),
         ]
 
 
 class Graphs:
     '''
     Class to store all the possible graphs in
+    Definitions should return a visualization object
 
     :author: Yuri Maas
     '''
@@ -158,7 +185,7 @@ class Graphs:
                             layer='below'
                         )
                     ],
-                    title='Graph',
+                    title='Test Graph',
                     xaxis = dict(
                         range= [0, dataset.get_resolution_X(new_mapname)]
                     ),

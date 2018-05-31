@@ -6,20 +6,22 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import flask
 import os
+import time
 
 # My packages
-from Storage import Data
-from DashUpdates import Graphs, Layout
+from Storage import Data, Current_Graphs
+from Templates import Graphs, Layout
 dataset = Data()
-
+plots = Current_Graphs()
 
 # Constants
 imageroute = '/MetroMapsEyeTracking/stimuli/'
 defaultmap = '03_Bordeaux_S1.jpg'
 
 
-
 app = dash.Dash()
+
+app.config['suppress_callback_exceptions'] = True
 
 app.layout = html.Div([
     # Global Structure ->   Input,
@@ -36,15 +38,34 @@ app.layout = html.Div([
         id= 'hidden',
         style= {'display': 'none'},
         children= [
-            html.Div(),
-            html.Div()
+            html.Div(
+                id= 'Graph-storage',
+                children= [
+                    html.Div(
+                        id= 'graph1-storage',
+                        children = [None]
+                    ),
+                    html.Div(
+                        id= 'graph2-storage',
+                        children = [None]
+                    ),
+                    html.Div(
+                        id= 'graph3-storage',
+                        children = [None]
+                    ),
+                    html.Div(
+                        id= 'graph4-storage',
+                        children = [None]
+                    ),
+                ]
+            )
         ]
     ),
 
     html.Div(
         id='Input-column',
         style={
-            'width': '12%',
+            'width': '15%',
             'display': 'inline-block',
             'marginLeft' : 5,
             'marginRight': 5
@@ -106,7 +127,8 @@ app.layout = html.Div([
                             {'label': '4 Panels', 'value': 4}
                         ],
                         searchable= False,
-                        placeholder= 'Select an amount of panels'
+                        placeholder= 'Select an amount of panels',
+                        #value= 4
                     ),
 
                     dcc.RadioItems(
@@ -133,7 +155,8 @@ app.layout = html.Div([
                             {'label': 'Adjacency Matrix', 'value': 0},
                             {'label': 'Metro Map', 'value': 1}
                         ],
-                        labelStyle= {'display': 'inline-block'}
+                        labelStyle= {'display': 'inline-block',
+                                     'marginRight': 80}
                     ),
                     html.Hr()
                 ]
@@ -157,64 +180,12 @@ app.layout = html.Div([
     html.Div(
         id='Visualization',
         style={
-            'width': '65%',
+            'width': '70%',
             'display': 'inline-block',
             'marginLeft': 5,
             'marginRight': 5
         },
-        children=[
-            html.H1('Plots'),
-
-            ### The first column of graphs
-            html.Div(
-                id= 'Visualization-C1',
-                style = {
-                    'width': '48%',
-                    'display': 'inline-block',
-                },
-                children= [
-                    html.Div(
-                        id= 'Visualization-C1-1',
-                        children= dcc.Graph(
-                            id='puzzle-graph1-1',
-                        ),
-                    ),
-                    html.Hr(),
-
-                    html.Div(
-                        id= 'Visualization-C1-2',
-                        children= dcc.Graph(
-                            id='puzzle-graph1-2',
-                        ),
-                    ),
-                ]
-            ),
-
-            ### The second column of graphs
-            html.Div(
-                id= 'Visualization-C2',
-                style={
-                    'width': '48%',
-                    'display': 'inline-block',
-                },
-                children= [
-                    html.Div(
-                        id='Visualization-C2-1',
-                        children=dcc.Graph(
-                            id='puzzle-graph2-1',
-                        ),
-                    ),
-                    html.Hr(),
-
-                    html.Div(
-                        id='Visualization-C2-2',
-                        children=dcc.Graph(
-                            id='puzzle-graph2-2',
-                        ),
-                    ),
-                ]
-            )
-        ]
+        children= Layout.no_graphs(),
     ),
 
 
@@ -228,7 +199,7 @@ app.layout = html.Div([
             html.H1('Information'),
             html.Div(
                 id= 'Information-1'
-            )
+            ),
         ]
     ),
 ])
@@ -238,16 +209,18 @@ app.layout = html.Div([
 
 
 """Callbacks"""
-# Callback to update the visualization plot
+# 2 Callbacks to update the visualization plot
+'''
 @app.callback(
     Output('Visualization', 'children'),
     [Input('Submit', 'n_clicks')],
      state = [State('Input-add_options-puzzle_dropdown', 'value'),
               State('Input-panels-dropdown', 'value'),
-              State('Input-panels-panels', 'value')]
+              State('Input-panels-panels', 'value'),
+              State('Graph-storage', 'children')]
 )
-def update_visualization(n_clicks, input_puzzle, amount_panels, panel):
-    '''
+def update_visualization(n_clicks, input_puzzle, amount_panels, panel, current_list):
+    
     Updates the visualization based on the given parameters
 
     :author: Yuri Maas
@@ -256,13 +229,13 @@ def update_visualization(n_clicks, input_puzzle, amount_panels, panel):
     :param amount_panels: The total amount of requested panels
     :param panel: The panel to update
     :return: Layout with a single graph
-    '''
+    
     if amount_panels == 1:
         return Layout.single_graph(
             Graphs.test_map(input_puzzle, dataset)
         )
     if amount_panels == 4:
-        list_of_graphs = [None, None, None, None]
+        list_of_graphs = current_list
         list_of_graphs[panel] = Graphs.test_map(input_puzzle, dataset)
         return Layout.multiple_graphs(
             list_of_graphs
@@ -270,14 +243,165 @@ def update_visualization(n_clicks, input_puzzle, amount_panels, panel):
     return Layout.no_graphs()
 
 
+@app.callback(
+    Output('Graph-storage', 'children'),
+    [Input('Submit', 'n_clicks')],
+    [State('Input-add_options-puzzle_dropdown', 'value'),
+     State('Input-panels-dropdown', 'value'),
+     State('Input-panels-panels', 'value'),
+     State('Graph-storage', 'children')]
+)
+def update_graph_storage(n_clicks, input_puzzle, amount_panels, panel, current_list):
+    if panel == None:
+        return current_list
+    new_list = current_list
+    new_list[panel] = Graphs.test_map(input_puzzle, dataset)
+    return new_list
+
+@app.callback(
+    Output('Visualization', 'children'),
+    [Input('Submit', 'n_clicks')],
+    [State('Input-add_options-puzzle_dropdown', 'value'),
+     State('Input-panels-dropdown', 'value'),
+     State('Input-panels-panels', 'value'),
+     State('Graph-storage', 'children')]
+)
+def update_visualization(n_clicks, input_puzzle, amount_panels, panel, current_list):
+    if amount_panels == 1:
+        return Layout.single_graph(
+            Graphs.test_map(input_puzzle, dataset)
+        )
+    if amount_panels == 4:
+        list_of_graphs = current_list
+        list_of_graphs[panel] = Graphs.test_map(input_puzzle, dataset)
+        return Layout.multiple_graphs(
+            list_of_graphs
+        )
+    return Layout.no_graphs()
+
+# Changes the layout based on the amount of desired panels
+@app.callback(
+    Output('Visualization', 'children'),
+    [Input('Input-panels-dropdown', 'value')]
+)
+def update_layout(amount_panels):
+    if amount_panels == 1:
+        return Layout.single_graph()
+    if amount_panels == 4:
+        return Layout.four_graphs()
+    return Layout.no_graphs()
+
+
+@app.callback(
+    Output('Visualization', 'children'),
+    [Input('graph1-storage', 'children'),
+     Input('graph2-storage', 'children'),
+     Input('graph3-storage', 'children'),
+     Input('graph4-storage', 'children')],
+    [State('Input-panels-dropdown', 'value')]
+)
+def update_visualization(graph1, graph2, graph3, graph4, amount_panels):
+    if amount_panels == 1:
+        return Layout.single_graph(
+            graph1
+        )
+    if amount_panels == 4:
+        return Layout.four_graphs(
+            [graph1, graph2, graph3, graph4]
+        )
+    return Layout.no_graphs()
+
+
+# Change graph 1
+@app.callback(
+    Output('graph1-storage', 'children'),
+    [Input('Submit', 'n_clicks')],
+    [State('Input-add_options-puzzle_dropdown', 'value'),
+     State('Input-panels-panels', 'value')]
+)
+def update_graph1_storage(n_clicks, input_puzzle, panel):
+    if panel == 0:
+        return [Graphs.test_map(input_puzzle, dataset)]
+
+
+# Change graph 2
+@app.callback(
+    Output('graph2-storage', 'children'),
+    [Input('Submit', 'n_clicks')],
+    [State('Input-add_options-puzzle_dropdown', 'value'),
+     State('Input-panels-panels', 'value')]
+)
+def update_graph2_storage(n_clicks, input_puzzle, panel):
+    if panel == 1:
+        return [Graphs.test_map(input_puzzle, dataset)]
+
+
+# Change graph 3
+@app.callback(
+    Output('graph3-storage', 'children'),
+    [Input('Submit', 'n_clicks')],
+    [State('Input-add_options-puzzle_dropdown', 'value'),
+     State('Input-panels-panels', 'value')]
+)
+def update_graph3_storage(n_clicks, input_puzzle, panel):
+    if panel == 2:
+        return [Graphs.test_map(input_puzzle, dataset)]
+
+
+# Change graph 4
+@app.callback(
+    Output('graph4-storage', 'children'),
+    [Input('Submit', 'n_clicks')],
+    [State('Input-add_options-puzzle_dropdown', 'value'),
+     State('Input-panels-panels', 'value')]
+)
+def update_graph4_storage(n_clicks, input_puzzle, panel):
+    if panel == 3:
+        return [Graphs.test_map(input_puzzle, dataset)]
+'''
+
+@app.callback(
+    Output('Visualization', 'children'),
+    [Input('Submit', 'n_clicks')],
+    [State('Input-add_options-puzzle_dropdown', 'value'),
+     State('Input-panels-dropdown', 'value'),
+     State('Input-panels-panels', 'value')]
+)
+def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel):
+    if selected_panel is not None and input_puzzle is not None:
+        plots.reset_graph(selected_panel)
+        plots.set_graph(selected_panel,
+                        Graphs.test_map(input_puzzle, dataset))
+
+    time.sleep(0.05)
+    if amount_panels == 1:
+        return Layout.single_graph(
+            plots.get_graph(0)
+        )
+
+    if amount_panels == 4:
+        return Layout.four_graphs(
+            plots.get_graph(0),
+            plots.get_graph(1),
+            plots.get_graph(2),
+            plots.get_graph(3)
+        )
+
+    for i in range(4):
+        plots.reset_graph(i)
+    return Layout.no_graphs()
+
+
+
+
 # Callback to change the amount of panels based on the panel dropdown
 @app.callback(
     Output('Input-panels-panels', 'options'),
     [Input('Input-panels-dropdown', 'value')]
 )
-def update_options(input_value):
+def update_panels(input_value):
     '''
-    Adds RadioItems equal to the desired amount of visualization panels
+    Adds panel RadioItems equal to the desired amount of visualization panels
 
     :author: Yuri Maas
     :param input_value: Amount of desired panels
@@ -293,36 +417,34 @@ def update_options(input_value):
     Output('Input-add_options', 'children'),
     [Input('Input-vis_types-types', 'value')]
 )
-def update_additional_options(input_type):
+def update_visualization_options(input_type):
+    '''
+    Add additional options for the visualization types
 
+    :author: Yuri Maas
+    :param input_type: The type of visualization that's desired
+    :return: Additional options
+    '''
     # 0 = Adjacency Matrix
     # 1 = Metro Map
     if input_type == 0:
         return [
             # Choose Puzzle, Choose Adjacency matrix type
-            html.Label('Puzzle:'),
-            dcc.Dropdown(
-                id='Input-add_options-puzzle_dropdown',
-                value=defaultmap,
-                options=dataset.get_puzzlenames()
-            ),
             dcc.RadioItems(
                 id='Input-add_options-adjacency',
                 options=[
 
                 ]
+            ),
+            html.Div(
+                id= 'Input-select_puzzle',
+                children= Layout.select_puzzle(dataset)
             )
         ]
 
     if input_type == 1:
         return [
             # Choose puzzle, Choose map overlay
-            html.Label('Puzzle:'),
-            dcc.Dropdown(
-                id='Input-add_options-puzzle_dropdown',
-                value=defaultmap,
-                options=dataset.get_puzzlenames()
-            ),
             dcc.RadioItems(
                 id='Input-add_options-metro_map',
                 options=[
@@ -330,13 +452,28 @@ def update_additional_options(input_type):
                     {'label': 'Attention map', 'value': 1}
                 ],
                 labelStyle= {'display': 'inline-block',
-                             'marginRight': 20}
+                             'marginRight': 80}
             ),
+            html.Div(
+                id= 'Input-select_puzzle',
+                children= Layout.select_puzzle(dataset)
+            )
         ]
 
+# Callback that changes the puzzle shown when selecting a panel
+@app.callback(
+    Output('puzzle-image', 'src'),
+    [Input('Input-add_options-puzzle_dropdown', 'value')]
+)
+def update_map_image(input_puzzle):
+    if input_puzzle is None:
+        return None
+    return imageroute + input_puzzle
 
 
-# Server Things
+
+
+# Server and Image things
 @app.server.route('{}<image_path>.jpg'.format(imageroute))
 def serve_image(image_path):
     image_name = '{}.jpg'.format(image_path)
