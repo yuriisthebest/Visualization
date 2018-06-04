@@ -152,8 +152,9 @@ app.layout = html.Div([
                     dcc.RadioItems(
                         id= 'Input-vis_types-types',
                         options=[
-                            {'label': 'Adjacency Matrix', 'value': 0},
-                            {'label': 'Metro Map', 'value': 1}
+                            {'label': 'Puzzle', 'value': 'puzzle'},
+                            {'label': 'Adjacency Matrix', 'value': 'adj'},
+                            {'label': 'Metro Map', 'value': 'mm'}
                         ],
                         labelStyle= {'display': 'inline-block',
                                      'marginRight': 80}
@@ -209,169 +210,42 @@ app.layout = html.Div([
 
 
 """Callbacks"""
-# 2 Callbacks to update the visualization plot
-'''
+# Callback to update the visualization
 @app.callback(
     Output('Visualization', 'children'),
     [Input('Submit', 'n_clicks')],
-     state = [State('Input-add_options-puzzle_dropdown', 'value'),
-              State('Input-panels-dropdown', 'value'),
-              State('Input-panels-panels', 'value'),
-              State('Graph-storage', 'children')]
+    [State('Input-add_options-puzzle_dropdown', 'value'),
+     State('Input-panels-dropdown', 'value'),
+     State('Input-panels-panels', 'value'),
+     State('Input-vis_types-types', 'value')]
 )
-def update_visualization(n_clicks, input_puzzle, amount_panels, panel, current_list):
-    
-    Updates the visualization based on the given parameters
+def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_type):
+    '''
+    Updates the visualization based on the input parameters
 
     :author: Yuri Maas
-    :param n_clicks: Usefull to check whether the button has been pressed, no other uses
-    :param input_puzzle: The name of the new map
-    :param amount_panels: The total amount of requested panels
-    :param panel: The panel to update
-    :return: Layout with a single graph
-    
-    if amount_panels == 1:
-        return Layout.single_graph(
-            Graphs.test_map(input_puzzle, dataset)
-        )
-    if amount_panels == 4:
-        list_of_graphs = current_list
-        list_of_graphs[panel] = Graphs.test_map(input_puzzle, dataset)
-        return Layout.multiple_graphs(
-            list_of_graphs
-        )
-    return Layout.no_graphs()
-
-
-@app.callback(
-    Output('Graph-storage', 'children'),
-    [Input('Submit', 'n_clicks')],
-    [State('Input-add_options-puzzle_dropdown', 'value'),
-     State('Input-panels-dropdown', 'value'),
-     State('Input-panels-panels', 'value'),
-     State('Graph-storage', 'children')]
-)
-def update_graph_storage(n_clicks, input_puzzle, amount_panels, panel, current_list):
-    if panel == None:
-        return current_list
-    new_list = current_list
-    new_list[panel] = Graphs.test_map(input_puzzle, dataset)
-    return new_list
-
-@app.callback(
-    Output('Visualization', 'children'),
-    [Input('Submit', 'n_clicks')],
-    [State('Input-add_options-puzzle_dropdown', 'value'),
-     State('Input-panels-dropdown', 'value'),
-     State('Input-panels-panels', 'value'),
-     State('Graph-storage', 'children')]
-)
-def update_visualization(n_clicks, input_puzzle, amount_panels, panel, current_list):
-    if amount_panels == 1:
-        return Layout.single_graph(
-            Graphs.test_map(input_puzzle, dataset)
-        )
-    if amount_panels == 4:
-        list_of_graphs = current_list
-        list_of_graphs[panel] = Graphs.test_map(input_puzzle, dataset)
-        return Layout.multiple_graphs(
-            list_of_graphs
-        )
-    return Layout.no_graphs()
-
-# Changes the layout based on the amount of desired panels
-@app.callback(
-    Output('Visualization', 'children'),
-    [Input('Input-panels-dropdown', 'value')]
-)
-def update_layout(amount_panels):
-    if amount_panels == 1:
-        return Layout.single_graph()
-    if amount_panels == 4:
-        return Layout.four_graphs()
-    return Layout.no_graphs()
-
-
-@app.callback(
-    Output('Visualization', 'children'),
-    [Input('graph1-storage', 'children'),
-     Input('graph2-storage', 'children'),
-     Input('graph3-storage', 'children'),
-     Input('graph4-storage', 'children')],
-    [State('Input-panels-dropdown', 'value')]
-)
-def update_visualization(graph1, graph2, graph3, graph4, amount_panels):
-    if amount_panels == 1:
-        return Layout.single_graph(
-            graph1
-        )
-    if amount_panels == 4:
-        return Layout.four_graphs(
-            [graph1, graph2, graph3, graph4]
-        )
-    return Layout.no_graphs()
-
-
-# Change graph 1
-@app.callback(
-    Output('graph1-storage', 'children'),
-    [Input('Submit', 'n_clicks')],
-    [State('Input-add_options-puzzle_dropdown', 'value'),
-     State('Input-panels-panels', 'value')]
-)
-def update_graph1_storage(n_clicks, input_puzzle, panel):
-    if panel == 0:
-        return [Graphs.test_map(input_puzzle, dataset)]
-
-
-# Change graph 2
-@app.callback(
-    Output('graph2-storage', 'children'),
-    [Input('Submit', 'n_clicks')],
-    [State('Input-add_options-puzzle_dropdown', 'value'),
-     State('Input-panels-panels', 'value')]
-)
-def update_graph2_storage(n_clicks, input_puzzle, panel):
-    if panel == 1:
-        return [Graphs.test_map(input_puzzle, dataset)]
-
-
-# Change graph 3
-@app.callback(
-    Output('graph3-storage', 'children'),
-    [Input('Submit', 'n_clicks')],
-    [State('Input-add_options-puzzle_dropdown', 'value'),
-     State('Input-panels-panels', 'value')]
-)
-def update_graph3_storage(n_clicks, input_puzzle, panel):
-    if panel == 2:
-        return [Graphs.test_map(input_puzzle, dataset)]
-
-
-# Change graph 4
-@app.callback(
-    Output('graph4-storage', 'children'),
-    [Input('Submit', 'n_clicks')],
-    [State('Input-add_options-puzzle_dropdown', 'value'),
-     State('Input-panels-panels', 'value')]
-)
-def update_graph4_storage(n_clicks, input_puzzle, panel):
-    if panel == 3:
-        return [Graphs.test_map(input_puzzle, dataset)]
-'''
-
-@app.callback(
-    Output('Visualization', 'children'),
-    [Input('Submit', 'n_clicks')],
-    [State('Input-add_options-puzzle_dropdown', 'value'),
-     State('Input-panels-dropdown', 'value'),
-     State('Input-panels-panels', 'value')]
-)
-def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel):
+    :param n_clicks: number of times the button has been clicked, irrelevant
+    :param input_puzzle: The (raw) name of the puzzle to use
+    :param amount_panels: The amount of plots the visualization has to use
+    :param selected_panel: Which panel to modify
+    :param vis_type: The type of visualization to put ni the selected panel
+    :return: A layout for the visualization with a certain amount of plots
+    '''
     if selected_panel is not None and input_puzzle is not None:
         plots.reset_graph(selected_panel)
+        time.sleep(0.05)
+
+        if vis_type == 'puzzle':
+            graph = Graphs.puzzle_image(input_puzzle)
+        elif vis_type == 'mm':
+            graph = Graphs.test_map(input_puzzle, dataset)
+        elif vis_type == 'adj':
+            graph = None
+        else:
+            graph = None
+
         plots.set_graph(selected_panel,
-                        Graphs.test_map(input_puzzle, dataset))
+                        graph)
 
     time.sleep(0.05)
     if amount_panels == 1:
@@ -425,15 +299,16 @@ def update_visualization_options(input_type):
     :param input_type: The type of visualization that's desired
     :return: Additional options
     '''
-    # 0 = Adjacency Matrix
-    # 1 = Metro Map
-    if input_type == 0:
+    # adj = Adjacency Matrix
+    # mm = Metro Map
+    # puzzle = Puzzle
+    if input_type == 'adj':
         return [
             # Choose Puzzle, Choose Adjacency matrix type
             dcc.RadioItems(
                 id='Input-add_options-adjacency',
                 options=[
-
+                    {'label': 'Normal Adjacency', 'value': 'normal'}
                 ]
             ),
             html.Div(
@@ -442,20 +317,28 @@ def update_visualization_options(input_type):
             )
         ]
 
-    if input_type == 1:
+    if input_type == 'mm':
         return [
             # Choose puzzle, Choose map overlay
             dcc.RadioItems(
                 id='Input-add_options-metro_map',
                 options=[
-                    {'label': 'Gaze plot', 'value': 0},
-                    {'label': 'Attention map', 'value': 1}
+                    {'label': 'Gaze plot', 'value': 'gaze'},
+                    {'label': 'Attention map', 'value': 'attention'}
                 ],
                 labelStyle= {'display': 'inline-block',
                              'marginRight': 80}
             ),
             html.Div(
                 id= 'Input-select_puzzle',
+                children= Layout.select_puzzle(dataset)
+            )
+        ]
+
+    if input_type == 'puzzle':
+        return [
+            html.Div(
+                id= 'Input-select-puzzle',
                 children= Layout.select_puzzle(dataset)
             )
         ]

@@ -143,7 +143,7 @@ class Layout:
 
 class Graphs:
     '''
-    Class to store all the possible graphs in
+    Class to store all the possible plots in
     Definitions should return a visualization object
 
     :author: Yuri Maas
@@ -197,3 +197,24 @@ class Graphs:
                 )
             }
         )
+
+    @staticmethod
+    def puzzle_image(puzzle):
+        '''
+        Finds and shows the image of a certain puzzle
+
+        :author: Yuri Maas
+        :param puzzle: The name of the puzzle to show in the plot
+        :return: Image object with the puzzle image
+        '''
+        return html.Img(
+            id = 'puzzle-plot',
+            style= {
+                'width': '100%'
+            },
+            src= '/MetroMapsEyeTracking/stimuli/' + puzzle
+        )
+
+    @staticmethod
+    def basic_adjacency(new_mapname, dataset):
+
