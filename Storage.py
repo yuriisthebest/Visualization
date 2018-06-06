@@ -1,4 +1,5 @@
 import pandas as pd
+import numpy as np
 
 class Data:
     """
@@ -107,6 +108,18 @@ class Data:
         :return: The entire (processed) dataset
         """
         return self.__data
+
+    def get_puzzle_data(self, puzzle_name):
+        '''
+        Returns all the fixations of a single puzzle
+
+        :author: Yuri Maas & Annelies vd Wetering
+        :param puzzle: The puzzlename to return all the fixations from
+        :return: All the fixations of a certain puzzle
+        '''
+        all_fixations = pd.DataFrame(self.__data.loc[self.__data['StimuliName'] == puzzle_name])
+        paths = [pd.DataFrame(all_fixations[all_fixations['user'] == i]) for i in all_fixations['user'].unique()]
+        return paths
 
     def get_resolution_X(self, puzzle_name):
         """

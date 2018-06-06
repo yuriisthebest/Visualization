@@ -38,27 +38,12 @@ app.layout = html.Div([
         id= 'hidden',
         style= {'display': 'none'},
         children= [
-            html.Div(
-                id= 'Graph-storage',
-                children= [
-                    html.Div(
-                        id= 'graph1-storage',
-                        children = [None]
-                    ),
-                    html.Div(
-                        id= 'graph2-storage',
-                        children = [None]
-                    ),
-                    html.Div(
-                        id= 'graph3-storage',
-                        children = [None]
-                    ),
-                    html.Div(
-                        id= 'graph4-storage',
-                        children = [None]
-                    ),
-                ]
-            )
+            # These are hidden, necessary for error prevention
+            dcc.RadioItems(
+                id= 'Input-add_options-adjacency',
+            ),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_color')
         ]
     ),
 
@@ -174,6 +159,9 @@ app.layout = html.Div([
                     ),
                 ]
             ),
+            html.Div(
+                id= 'Input-puzzle (WIP',
+            )
         ]
     ),
 
@@ -217,9 +205,11 @@ app.layout = html.Div([
     [State('Input-add_options-puzzle_dropdown', 'value'),
      State('Input-panels-dropdown', 'value'),
      State('Input-panels-panels', 'value'),
-     State('Input-vis_types-types', 'value')]
+     State('Input-vis_types-types', 'value'),
+     State('Input-add_options-adjacency', 'value'),
+     State('Input-add_options-adjacency_color', 'value')]
 )
-def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_type):
+def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_type, compare_method, color):
     '''
     Updates the visualization based on the input parameters
 
@@ -229,20 +219,21 @@ def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_ty
     :param amount_panels: The amount of plots the visualization has to use
     :param selected_panel: Which panel to modify
     :param vis_type: The type of visualization to put ni the selected panel
+    :param compare_method: In case of adjacency, the comparison method to use
+    :param color: In case of adjacency, the color to use
     :return: A layout for the visualization with a certain amount of plots
     '''
     if selected_panel is not None and input_puzzle is not None:
         plots.reset_graph(selected_panel)
         time.sleep(0.05)
 
+        graph = None
         if vis_type == 'puzzle':
             graph = Graphs.puzzle_image(input_puzzle)
         elif vis_type == 'mm':
             graph = Graphs.test_map(input_puzzle, dataset)
         elif vis_type == 'adj':
-            graph = None
-        else:
-            graph = None
+            graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color)
 
         plots.set_graph(selected_panel,
                         graph)
@@ -304,13 +295,37 @@ def update_visualization_options(input_type):
     # puzzle = Puzzle
     if input_type == 'adj':
         return [
-            # Choose Puzzle, Choose Adjacency matrix type
+            # What comparison method
+            html.Label('Comparison method'),
             dcc.RadioItems(
                 id='Input-add_options-adjacency',
                 options=[
-                    {'label': 'Normal Adjacency', 'value': 'normal'}
-                ]
+                    {'label': 'Test comparison', 'value': 'test'},
+                    {'label': 'Bounding box', 'value': 'bound'},
+                    {'label': 'Euclidean distance', 'value': 'euc'},
+                ],
+                labelStyle={'display': 'inline-block',
+                            'marginRight': 80}
             ),
+
+            html.Label('Color'),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_color',
+                options=[
+                    {'label': 'Default', 'value': 'def'},
+                    {'label': 'Hot', 'value': 'hot'},
+                    {'label': 'Green', 'value': 'green'},
+                    {'label': 'Viridis', 'value': 'vir'},
+                    {'label': 'Electric', 'value': 'elec', 'disabled': 'True'},
+                    {'label': 'Rainbow', 'value': 'rainbow'},
+                ],
+                searchable=False,
+                clearable= False,
+                placeholder='Select color',
+            ),
+
+            # The puzzle selection
+            html.Hr(),
             html.Div(
                 id= 'Input-select_puzzle',
                 children= Layout.select_puzzle(dataset)
@@ -329,6 +344,7 @@ def update_visualization_options(input_type):
                 labelStyle= {'display': 'inline-block',
                              'marginRight': 80}
             ),
+            html.Hr(),
             html.Div(
                 id= 'Input-select_puzzle',
                 children= Layout.select_puzzle(dataset)

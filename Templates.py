@@ -1,4 +1,6 @@
 import pandas as pd
+import numpy as np
+import random
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
@@ -8,7 +10,6 @@ import flask
 import os
 
 from Storage import Data
-
 
 class Layout:
     '''
@@ -125,7 +126,6 @@ class Layout:
         :return: The input layout to select a puzzle
         '''
         return [
-            html.Hr(),
             html.Label('Puzzle:'),
             dcc.Dropdown(
                 id='Input-add_options-puzzle_dropdown',
@@ -216,5 +216,147 @@ class Graphs:
         )
 
     @staticmethod
-    def basic_adjacency(new_mapname, dataset):
+    def basic_adjacency(dataset, new_mapname, compare_method, colortype):
+        '''
+        Creates an adjacency matrix graph for the Plots panel
 
+        :author: Yuri Maas
+        :param dataset: The data to use to create the adjacency matrix
+        :param new_mapname: The puzzle to use
+        :param compare_method: Which method to use to grade 2 paths on
+        :param colortype: The color the heatmap should be
+        :return: Heatmap object which shows the adjacency matrix for all paths of a certain puzzle
+        '''
+        all_paths = dataset.get_puzzle_data(new_mapname)
+        all_users = [all_paths[i]['user'].unique()[0] for i in range(len(all_paths))]
+        matrix = np.zeros((len(all_users), len(all_users)))
+
+        for i in range(len(all_users)):
+            path1 = all_paths[i]
+            for j in range(i, len(all_users)):
+                path2 = all_paths[j]
+                similarity = Graphs.compare(compare_method, path1, path2)
+                matrix[i, j] = similarity
+                matrix[j, i] = similarity
+
+        # Determine the colorscale
+        colordict = {
+            'def': 'RdBu',
+            'hot': 'Hot',
+            'green': 'Greens',
+            'vir': 'Viridis',
+            'elec': 'Electric',
+            'rainbow': 'Rainbow',
+        }
+        color = colordict[colortype]
+        return dcc.Graph(
+            id= 'adjacency-matrix',
+            figure= {
+                'data': [
+                    {
+                        'z': matrix,
+                        'x': all_users,
+                        'y': all_users,
+                        'type': 'heatmap',
+                        'colorscale': color,
+                    }
+                ],
+                'layout': go.Layout(
+                    title= 'Adjacency Matrix of puzzle: {}'.format(new_mapname[3:-4]),
+                    yaxis= dict(autorange= 'reversed')
+                )
+            }
+        )
+
+    @staticmethod
+    def compare(method, path1, path2):
+        '''
+        Calls the method to determine the similarity between path1 and path2
+
+        :author: Yuri Maas
+        :param method: The method to determine similarity
+        :param path1: Path to compare with path2
+        :param path2: Path to compare with path1
+        :return: A value that resembles the similarity between path1 and path2
+        '''
+        if method == 'bound':
+            return Graphs.adjcompare_bounding_box(path1, path2)
+        if method == 'euc':
+            return Graphs.adjcompare_euc_dist(path1, path2)
+        return Graphs.adjcompare_random()
+
+    @staticmethod
+    def adjcompare_random():
+        '''
+        Returns a value between 0 and 1 randomly
+
+        :author: Yuri Maas
+        :param path1: The scanpath to compare to path2
+        :param path2: The scanptah to compare to path1
+        :return: value > 0 && value < 1
+        '''
+        return 0.5 * random.randint(0, 1) + 0.25 * random.randint(0, 1) + 0.25 * random.randint(0, 1)
+
+    @staticmethod
+    def adjcompare_bounding_box(path1, path2):
+        '''
+
+        :author: Maaike? Finish this
+        :param path1:
+        :param path2:
+        :return:
+        '''
+        Rect = namedtuple('Rectangle', 'xmin ymin xmax ymax')
+        xmin_1 = min([path1[i][5] for i in range(len(path1))])
+        xmax_1 = max([path1[i][5] for i in range(len(path1))])
+        ymin_1 = min([path1[i][6] for i in range(len(path1))])
+        ymax_1 = max([path1[i][6] for i in range(len(path1))])
+        R1 = Rect(xmin_1, ymin_1, xmax_1, ymax_1)
+
+        xmin_2 = min([path2[i][5] for i in range(len(path2))])
+        xmax_2 = max([path2[i][5] for i in range(len(path2))])
+        ymin_2 = min([path2[i][6] for i in range(len(path2))])
+        ymax_2 = max([path2[i][6] for i in range(len(path2))])
+        R2 = Rect(xmin_2, ymin_2, xmax_2, ymax_2)
+
+        dx = min(R1.xmax, R2.xmax) - max(R1.xmin, R2.xmin)
+        dy = min(R1.ymax, R2.ymax) - max(R1.ymin, R2.ymin)
+
+        if (dx >= 0) and (dy >= 0):
+            area = dx * dy
+            area_1 = (R1.xmax - R1.xmin) * (R1.ymax - R1.ymin)
+            area_2 = (R2.xmax - R2.xmin) * (R2.ymax - R2.ymin)
+            total_area = area_1 + area_2
+            return area / total_area
+        else:
+            return 0
+
+    @staticmethod
+    def adjcompare_euc_dist(path1, path2):
+        '''
+
+        :author: Annelies? Finish this
+        :param path1:
+        :param path2:
+        :return:
+        '''
+        x1 = np.array(np.matlib.repmat(path1[:, 4].reshape((len(path1), 1)), 1, len(path2)))
+        x2 = np.array(np.matlib.repmat(path2[:, 4].reshape((1, len(path2))), len(path1), 1))
+
+        y1 = np.array(np.matlib.repmat(path1[:, 5].reshape((len(path1), 1)), 1, len(path2)))
+        y2 = np.array(np.matlib.repmat(path2[:, 5].reshape((1, len(path2))), len(path1), 1))
+
+        distx = np.power(x1 - x2, 2)
+        disty = np.power(y1 - y2, 2)
+
+        Euc_dist = np.array(np.power(distx + disty, 0.5))
+        Euc_dist_colmin = np.amin(Euc_dist, axis=0)  # minimum distances for sequence A
+        Euc_dist_rowmin = np.amin(Euc_dist, axis=1)  # minimum distances for sequence B
+
+        Euc_dist_tot = np.sum(Euc_dist_colmin) + np.sum(Euc_dist_rowmin)
+        map_dimensions = np.array([1920, 1200])
+        m = np.power(np.power(map_dimensions[0], 2) + np.power(map_dimensions[1], 2),
+                     0.5)  # calculate maximum possible distance!
+        Euc_dist_tot_norm = 1 / ((len(Euc_dist_colmin) + len(Euc_dist_rowmin)) * m) * Euc_dist_tot
+
+        return Euc_dist_tot_norm
