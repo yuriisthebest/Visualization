@@ -257,6 +257,17 @@ class Graphs:
         }
         return dcc.Graph(
             id= 'adjacency-matrix',
+            clear_on_unhover= True,
+            config= {
+                'modeBarButtonsToRemove': [
+                    'autoScale2d',
+                    'zoomIn2d',
+                    'zoomOut2d',
+                    'hoverClosestCartesian',
+                    'hoverCompareCartesian',
+                    'toggleSpikelines',
+                    'sendDataToCloud'],
+            },
             figure= {
                 'data': [
                     {

@@ -92,6 +92,18 @@ app.layout = html.Div([
                             html.Button('Save as')
                         ]
                     ),
+                    # Visualize-Logo
+                    html.Hr(),
+                    html.Img(
+                        id= 'Company logo',
+                        src= imageroute + 'VisualEyes.jpg',
+                        title= 'Visual-Eyes\nJust let the user do it',
+                        style={
+                            'width': '100%'
+                        },
+                    ),
+
+                    # Submit button
                     html.Hr(),
                     html.Button(
                         'Submit Graph',
