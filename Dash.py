@@ -269,7 +269,6 @@ def update_storage(n_clicks, input_puzzle,          # What puzzle to use
 
 
 
-
 # Callback to change the amount of panels based on the panel dropdown
 @app.callback(
     Output('Input-panels-panels', 'options'),
@@ -394,6 +393,33 @@ def update_map_image(input_puzzle):
     if input_puzzle is None:
         return None
     return imageroute + input_puzzle
+
+
+
+# Callback to select data at hover and show it as information
+@app.callback(
+    Output('Information-1', 'children'),
+    [Input('adjacency-matrix', 'clickData'),
+     Input('adjacency-matrix', 'hoverData')]
+)
+def display_click_data(clickdata, hoverData):
+    if hoverData is not None:
+        hover = html.P('Hover data:\nComparing scanpath of user {} with {}.\nTheir similarity = {}'.format(
+            hoverData['points'][0]['y'],
+            hoverData['points'][0]['x'],
+            hoverData['points'][0]['z']))
+    else:
+        hover = None
+
+    if clickdata is not None:
+        click = html.P('Click data:\nComparing scanpath of user {} with {}.\nTheir similarity = {}'.format(
+            clickdata['points'][0]['y'],
+            clickdata['points'][0]['x'],
+            clickdata['points'][0]['z']))
+    else:
+        click = None
+
+    return [hover, click]
 
 
 
