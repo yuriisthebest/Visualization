@@ -43,7 +43,11 @@ app.layout = html.Div([
                 id= 'Input-add_options-adjacency',
             ),
             dcc.Dropdown(
-                id='Input-add_options-adjacency_color')
+                id='Input-add_options-adjacency_color'
+            ),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_order'
+            ),
         ]
     ),
 
@@ -207,21 +211,28 @@ app.layout = html.Div([
      State('Input-panels-panels', 'value'),
      State('Input-vis_types-types', 'value'),
      State('Input-add_options-adjacency', 'value'),
-     State('Input-add_options-adjacency_color', 'value')]
+     State('Input-add_options-adjacency_color', 'value'),
+     State('Input-add_options-adjacency_order', 'value'),
+     ]
 )
-def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_type, compare_method, color):
+def update_storage(n_clicks, input_puzzle,          # What puzzle to use
+                   amount_panels, selected_panel,   # Panel selections
+                   vis_type,                        # Type of visualization (Puzzle, Adjacency matrix, Mapping)
+                   compare_method, color, ordering  # For adjacency matrices
+                   ):
     '''
     Updates the visualization based on the input parameters
 
     :author: Yuri Maas
-    :param n_clicks: number of times the button has been clicked, irrelevant
+    :param n_clicks: number of times the button has been clicked, irrelevant, only used to detect change
     :param input_puzzle: The (raw) name of the puzzle to use
     :param amount_panels: The amount of plots the visualization has to use
     :param selected_panel: Which panel to modify
     :param vis_type: The type of visualization to put ni the selected panel
-    :param compare_method: In case of adjacency, the comparison method to use
-    :param color: In case of adjacency, the color to use
-    :return: A layout for the visualization with a certain amount of plots
+    :param compare_method: In case of adjacency matrix, the comparison method to use
+    :param color: In case of adjacency matrix, the color to use
+    :param ordering: In case of adjacency matrix, the sorting algorithm use to order the matrix
+    :return: A layout for the visualization with a certain amount of determined plots
     '''
     if selected_panel is not None and input_puzzle is not None:
         plots.reset_graph(selected_panel)
@@ -233,7 +244,7 @@ def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_ty
         elif vis_type == 'mm':
             graph = Graphs.test_map(input_puzzle, dataset)
         elif vis_type == 'adj':
-            graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color)
+            graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color, ordering)
 
         plots.set_graph(selected_panel,
                         graph)
@@ -308,6 +319,7 @@ def update_visualization_options(input_type):
                             'marginRight': 80}
             ),
 
+            # What colorscale the adjacency matrix should use
             html.Label('Color'),
             dcc.Dropdown(
                 id='Input-add_options-adjacency_color',
@@ -319,9 +331,23 @@ def update_visualization_options(input_type):
                     {'label': 'Electric', 'value': 'elec', 'disabled': 'True'},
                     {'label': 'Rainbow', 'value': 'rainbow'},
                 ],
-                searchable=False,
+                searchable= False,
                 clearable= False,
-                placeholder='Select color',
+                placeholder= 'Select color',
+                value= 'def',
+            ),
+
+            # What ordering method to use
+            html.Label('Ordering'),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_order',
+                options=[
+                    {'label': 'No ordering', 'value': 'no'},
+                    {'label': 'Alphabetical ordering', 'value': 'alphabet'},
+                ],
+                searchable= False,
+                clearable= False,
+                value= 'no',
             ),
 
             # The puzzle selection
