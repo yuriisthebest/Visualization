@@ -216,7 +216,7 @@ class Graphs:
         )
 
     @staticmethod
-    def basic_adjacency(dataset, new_mapname, compare_method, colortype):
+    def basic_adjacency(dataset, new_mapname, compare_method, colortype, ordering):
         '''
         Creates an adjacency matrix graph for the Plots panel
 
@@ -225,10 +225,13 @@ class Graphs:
         :param new_mapname: The puzzle to use
         :param compare_method: Which method to use to grade 2 paths on
         :param colortype: The color the heatmap should be
+        :param ordering: The reorder algorithm that should be used
         :return: Heatmap object which shows the adjacency matrix for all paths of a certain puzzle
         '''
+        # Get the fixation data for the puzzle
         all_paths = dataset.get_puzzle_data(new_mapname)
         all_users = [all_paths[i]['user'].unique()[0] for i in range(len(all_paths))]
+        # Set-up a matrix with only zeros to fill in
         matrix = np.zeros((len(all_users), len(all_users)))
 
         for i in range(len(all_users)):
@@ -239,6 +242,10 @@ class Graphs:
                 matrix[i, j] = similarity
                 matrix[j, i] = similarity
 
+        # Order the matrix
+        #if ordering == 'alphabet':
+
+
         # Determine the colorscale
         colordict = {
             'def': 'RdBu',
@@ -248,9 +255,19 @@ class Graphs:
             'elec': 'Electric',
             'rainbow': 'Rainbow',
         }
-        color = colordict[colortype]
         return dcc.Graph(
             id= 'adjacency-matrix',
+            clear_on_unhover= True,
+            config= {
+                'modeBarButtonsToRemove': [
+                    'autoScale2d',
+                    'zoomIn2d',
+                    'zoomOut2d',
+                    'hoverClosestCartesian',
+                    'hoverCompareCartesian',
+                    'toggleSpikelines',
+                    'sendDataToCloud'],
+            },
             figure= {
                 'data': [
                     {
@@ -258,7 +275,7 @@ class Graphs:
                         'x': all_users,
                         'y': all_users,
                         'type': 'heatmap',
-                        'colorscale': color,
+                        'colorscale': colordict[colortype],
                     }
                 ],
                 'layout': go.Layout(
@@ -299,6 +316,41 @@ class Graphs:
 
     @staticmethod
     def adjcompare_bounding_box(path1, path2):
+        '''
+        Calculates the bounding box overlap between two scanpaths
+
+        :author: Yuri Maas
+        :param path1: The scanpath (in DataFrame) to compare to path2
+        :param path2: The scanpath (in DataFrame) to compare to path1
+        :return: A similarity value between 0 and 1
+        '''
+        xmax_1 = max(path1['MappedFixationPointX'])
+        xmin_1 = min(path1['MappedFixationPointX'])
+        ymax_1 = max(path1['MappedFixationPointY'])
+        ymin_1 = min(path1['MappedFixationPointY'])
+
+        xmax_2 = max(path2['MappedFixationPointX'])
+        xmin_2 = min(path2['MappedFixationPointX'])
+        ymax_2 = max(path2['MappedFixationPointY'])
+        ymin_2 = min(path2['MappedFixationPointY'])
+
+        xmax_box = min(xmax_1, xmax_2)
+        xmin_box = max(xmin_1, xmin_2)
+        ymax_box = min(ymax_1, ymax_2)
+        ymin_box = max(ymin_1, ymin_2)
+        dx = xmax_box - xmin_box
+        dy = ymax_box - ymin_box
+        if dx >= 0 and dy >= 0:
+            overlap_area = dx * dy
+            area_1 = (xmax_1 - xmin_1) * (ymax_1 - ymin_1)
+            area_2 = (xmax_2 - xmin_2) * (ymax_2 - ymin_2)
+            # The total area of 2 rectangles is the area of 1 + (The area of the other - the overlapping part)
+            totalarea = area_1 + area_2 - overlap_area
+            return overlap_area / totalarea
+        return 0
+
+    @staticmethod
+    def adjcompare_bounding_box_dep(path1, path2):
         '''
 
         :author: Maaike? Finish this

@@ -43,7 +43,11 @@ app.layout = html.Div([
                 id= 'Input-add_options-adjacency',
             ),
             dcc.Dropdown(
-                id='Input-add_options-adjacency_color')
+                id='Input-add_options-adjacency_color'
+            ),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_order'
+            ),
         ]
     ),
 
@@ -88,6 +92,18 @@ app.layout = html.Div([
                             html.Button('Save as')
                         ]
                     ),
+                    # Visualize-Logo
+                    html.Hr(),
+                    html.Img(
+                        id= 'Company logo',
+                        src= imageroute + 'VisualEyes.jpg',
+                        title= 'Visual-Eyes\nJust let the user do it',
+                        style={
+                            'width': '100%'
+                        },
+                    ),
+
+                    # Submit button
                     html.Hr(),
                     html.Button(
                         'Submit Graph',
@@ -207,21 +223,28 @@ app.layout = html.Div([
      State('Input-panels-panels', 'value'),
      State('Input-vis_types-types', 'value'),
      State('Input-add_options-adjacency', 'value'),
-     State('Input-add_options-adjacency_color', 'value')]
+     State('Input-add_options-adjacency_color', 'value'),
+     State('Input-add_options-adjacency_order', 'value'),
+     ]
 )
-def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_type, compare_method, color):
+def update_storage(n_clicks, input_puzzle,          # What puzzle to use
+                   amount_panels, selected_panel,   # Panel selections
+                   vis_type,                        # Type of visualization (Puzzle, Adjacency matrix, Mapping)
+                   compare_method, color, ordering  # For adjacency matrices
+                   ):
     '''
     Updates the visualization based on the input parameters
 
     :author: Yuri Maas
-    :param n_clicks: number of times the button has been clicked, irrelevant
+    :param n_clicks: number of times the button has been clicked, irrelevant, only used to detect change
     :param input_puzzle: The (raw) name of the puzzle to use
     :param amount_panels: The amount of plots the visualization has to use
     :param selected_panel: Which panel to modify
     :param vis_type: The type of visualization to put ni the selected panel
-    :param compare_method: In case of adjacency, the comparison method to use
-    :param color: In case of adjacency, the color to use
-    :return: A layout for the visualization with a certain amount of plots
+    :param compare_method: In case of adjacency matrix, the comparison method to use
+    :param color: In case of adjacency matrix, the color to use
+    :param ordering: In case of adjacency matrix, the sorting algorithm use to order the matrix
+    :return: A layout for the visualization with a certain amount of determined plots
     '''
     if selected_panel is not None and input_puzzle is not None:
         plots.reset_graph(selected_panel)
@@ -233,7 +256,7 @@ def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_ty
         elif vis_type == 'mm':
             graph = Graphs.test_map(input_puzzle, dataset)
         elif vis_type == 'adj':
-            graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color)
+            graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color, ordering)
 
         plots.set_graph(selected_panel,
                         graph)
@@ -255,7 +278,6 @@ def update_storage(n_clicks, input_puzzle, amount_panels, selected_panel, vis_ty
     for i in range(4):
         plots.reset_graph(i)
     return Layout.no_graphs()
-
 
 
 
@@ -308,6 +330,7 @@ def update_visualization_options(input_type):
                             'marginRight': 80}
             ),
 
+            # What colorscale the adjacency matrix should use
             html.Label('Color'),
             dcc.Dropdown(
                 id='Input-add_options-adjacency_color',
@@ -319,9 +342,23 @@ def update_visualization_options(input_type):
                     {'label': 'Electric', 'value': 'elec', 'disabled': 'True'},
                     {'label': 'Rainbow', 'value': 'rainbow'},
                 ],
-                searchable=False,
+                searchable= False,
                 clearable= False,
-                placeholder='Select color',
+                placeholder= 'Select color',
+                value= 'def',
+            ),
+
+            # What ordering method to use
+            html.Label('Ordering'),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_order',
+                options=[
+                    {'label': 'No ordering', 'value': 'no'},
+                    {'label': 'Alphabetical ordering', 'value': 'alphabet'},
+                ],
+                searchable= False,
+                clearable= False,
+                value= 'no',
             ),
 
             # The puzzle selection
@@ -368,6 +405,33 @@ def update_map_image(input_puzzle):
     if input_puzzle is None:
         return None
     return imageroute + input_puzzle
+
+
+
+# Callback to select data at hover and show it as information
+@app.callback(
+    Output('Information-1', 'children'),
+    [Input('adjacency-matrix', 'clickData'),
+     Input('adjacency-matrix', 'hoverData')]
+)
+def display_click_data(clickdata, hoverData):
+    if hoverData is not None:
+        hover = html.P('Hover data:\nComparing scanpath of user {} with {}.\nTheir similarity = {}'.format(
+            hoverData['points'][0]['y'],
+            hoverData['points'][0]['x'],
+            hoverData['points'][0]['z']))
+    else:
+        hover = None
+
+    if clickdata is not None:
+        click = html.P('Click data:\nComparing scanpath of user {} with {}.\nTheir similarity = {}'.format(
+            clickdata['points'][0]['y'],
+            clickdata['points'][0]['x'],
+            clickdata['points'][0]['z']))
+    else:
+        click = None
+
+    return [hover, click]
 
 
 
