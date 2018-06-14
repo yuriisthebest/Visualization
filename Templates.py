@@ -455,3 +455,22 @@ class Graphs:
         figfile.seek(0)
         return base64.b64encode(figfile.getvalue())
 
+
+    @staticmethod
+    def gaze_plot(dataset, stimuli, color):
+        data = dataset.get_puzzle_data()
+        image_file = '/MetroMapsEyeTracking/stimuli/' + stimuli
+        img = Image.open(image_file, )
+        x_gaze = np.array(data['MappedFixationPointX'], dtype=float)
+        y_gaze = np.array(data['MappedFixationPointY'], dtype=float)
+        #fixationduration
+        d_gaze = np.array(data['FixationDuration'], dtype=float)
+        plt.imshow(img)
+        # put a red dot, size 40, at 2 locations:
+        #color options as many as there are users. Take red, deepskyblue, lawngreen, blue, darkviolet, fuchsia, maroon, darkorange, darkgreen, saddlebrown, mediumspringgreen, slategrey.
+
+        plt.scatter(x_gaze , y_gaze , c= color, marker='o', alpha=0.4, s=d_gaze, zorder=2)
+        plt.plot(x_gaze, y_gaze, color, alpha=0.5)
+        gaze_plot = plt.axis('off')
+
+        return gaze_plot
