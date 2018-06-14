@@ -346,7 +346,7 @@ class Graphs:
             area_2 = (xmax_2 - xmin_2) * (ymax_2 - ymin_2)
             # The total area of 2 rectangles is the area of 1 + (The area of the other - the overlapping part)
             totalarea = area_1 + area_2 - overlap_area
-            return overlap_area / totalarea
+            return round(overlap_area / totalarea, 3)
         return 0
 
     @staticmethod

@@ -155,7 +155,7 @@ app.layout = html.Div([
                         options=[
                             {'label': 'Puzzle', 'value': 'puzzle'},
                             {'label': 'Adjacency Matrix', 'value': 'adj'},
-                            {'label': 'Metro Map', 'value': 'mm'}
+                            {'label': 'Visual Attention Map', 'value': 'va'}
                         ],
                         labelStyle= {'display': 'inline-block',
                                      'marginRight': 80}
@@ -253,7 +253,7 @@ def update_storage(n_clicks, input_puzzle,          # What puzzle to use
         graph = None
         if vis_type == 'puzzle':
             graph = Graphs.puzzle_image(input_puzzle)
-        elif vis_type == 'mm':
+        elif vis_type == 'va':
             graph = Graphs.test_map(input_puzzle, dataset)
         elif vis_type == 'adj':
             graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color, ordering)
@@ -313,7 +313,7 @@ def update_visualization_options(input_type):
     :return: Additional options
     '''
     # adj = Adjacency Matrix
-    # mm = Metro Map
+    # va = Visual Attention Map
     # puzzle = Puzzle
     if input_type == 'adj':
         return [
@@ -354,7 +354,7 @@ def update_visualization_options(input_type):
                 id='Input-add_options-adjacency_order',
                 options=[
                     {'label': 'No ordering', 'value': 'no'},
-                    {'label': 'Alphabetical ordering', 'value': 'alphabet'},
+                    {'label': 'Alphabetical ordering', 'value': 'alphabet', 'disabled': 'True'},
                 ],
                 searchable= False,
                 clearable= False,
@@ -369,7 +369,7 @@ def update_visualization_options(input_type):
             )
         ]
 
-    if input_type == 'mm':
+    if input_type == 'va':
         return [
             # Choose puzzle, Choose map overlay
             dcc.RadioItems(
@@ -408,7 +408,7 @@ def update_map_image(input_puzzle):
 
 
 
-# Callback to select data at hover and show it as information
+# Callback to select data of adjacency matrix at hover and click and show it as information
 @app.callback(
     Output('Information-1', 'children'),
     [Input('adjacency-matrix', 'clickData'),
@@ -416,7 +416,7 @@ def update_map_image(input_puzzle):
 )
 def display_click_data(clickdata, hoverData):
     if hoverData is not None:
-        hover = html.P('Hover data:\nComparing scanpath of user {} with {}.\nTheir similarity = {}'.format(
+        hover = html.P('''Hover: Adjacency of user {} and {}: {}'''.format(
             hoverData['points'][0]['y'],
             hoverData['points'][0]['x'],
             hoverData['points'][0]['z']))
@@ -424,7 +424,7 @@ def display_click_data(clickdata, hoverData):
         hover = None
 
     if clickdata is not None:
-        click = html.P('Click data:\nComparing scanpath of user {} with {}.\nTheir similarity = {}'.format(
+        click = html.P('''Click: Adjacency of user {} and {}: {}'''.format(
             clickdata['points'][0]['y'],
             clickdata['points'][0]['x'],
             clickdata['points'][0]['z']))
