@@ -8,6 +8,11 @@ from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
 import flask
 import os
+import matplotlib.pyplot as plt
+from PIL import Image
+import sys
+from io import BytesIO
+import base64
 
 from Storage import Data
 
@@ -412,3 +417,41 @@ class Graphs:
         Euc_dist_tot_norm = 1 / ((len(Euc_dist_colmin) + len(Euc_dist_rowmin)) * m) * Euc_dist_tot
 
         return Euc_dist_tot_norm
+
+
+    @staticmethod
+    def get_visual_attention_map(stimuli, dataset):
+        """
+        gets the image of a certain stimuli
+        :author Maaike van Delft
+        :param the stimuli where we want the image from
+
+        """
+
+        df = dataset.get_puzzle_data(stimuli)
+
+        #Get x and y cooridnates
+        dfx = df[:, 4]
+        dfy = df[:, 5]
+        x = np.array(dfx, dtype=float)
+        y = np.array(dfy, dtype=float)
+
+
+        script_dir = sys.path[0]
+        image_path = os.path.join(script_dir, 'MetroMapsEyeTracking/stimuli/' + stimuli)
+        img = Image.open(image_path)
+        plt.imshow(img)
+
+        implot = plt.imshow(img)
+        heatmap_z, xedges, yedges = np.histogram2d(x, y, bins=30)
+        extent_2 = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
+
+        plt.plot()
+        plt.imshow(heatmap_z.T, extent=extent_2, origin='lower', camp='inferno', alpha=0.5)
+        plt.colorbar()
+
+        figfile = BytesIO()
+        plt.savefig(figfile, format='png')
+        figfile.seek(0)
+        return base64.b64encode(figfile.getvalue())
+

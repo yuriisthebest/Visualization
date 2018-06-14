@@ -21,7 +21,7 @@ defaultmap = '03_Bordeaux_S1.jpg'
 
 app = dash.Dash()
 
-app.config['suppress_callback_exceptions'] = True
+app.config.suppress_callback_exceptions= True
 
 app.layout = html.Div([
     # Global Structure ->   Input,
@@ -47,6 +47,12 @@ app.layout = html.Div([
             ),
             dcc.Dropdown(
                 id='Input-add_options-adjacency_order'
+            ),
+            html.Img(
+                id='puzzle-image'
+            ),
+            dcc.Graph(
+                id='adjacency-matrix'
             ),
         ]
     ),
