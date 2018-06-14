@@ -6,5 +6,6 @@ Created for a project of the study Data Science of TU/e and TiU
 Group Members:
 Yuri,
 Olivier,
-Maaike
+Maaike,
+Annelies
 <Add your own>
