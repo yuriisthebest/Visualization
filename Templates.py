@@ -154,56 +154,6 @@ class Graphs:
     :author: Yuri Maas
     '''
     @staticmethod
-    def test_map(new_mapname, dataset):
-        '''
-        Creates a graph with a certain map as background
-
-        :author: Yuri Maas
-        :param new_mapname: The name of the puzzle to be in the graph
-        :param dataset: The Class object from where to take the data
-        :return: Graph object with the corresponding map in it
-        '''
-
-        imageroute = '/MetroMapsEyeTracking/stimuli/'
-        return dcc.Graph(
-            id= 'single-graph',
-            figure = {
-                'data': [
-                    {
-                        'x': [0, dataset.get_resolution_X(new_mapname)],
-                        'y': [0, dataset.get_resolution_Y(new_mapname)],
-                    }
-                ],
-                'layout': go.Layout(
-                    images=[
-                        dict(
-                            source=imageroute + new_mapname,
-                            xref='x',
-                            yref='y',
-                            x=0,
-                            y=0,
-                            sizex= dataset.get_resolution_X(new_mapname),
-                            sizey= dataset.get_resolution_Y(new_mapname),
-                            xanchor='left',
-                            yanchor='bottom',
-                            #opacity=0.8,
-                            layer='below'
-                        )
-                    ],
-                    title='Test Graph',
-                    xaxis = dict(
-                        range= [0, dataset.get_resolution_X(new_mapname)]
-                    ),
-                    yaxis = dict(
-                        range= [0, dataset.get_resolution_Y(new_mapname)]
-                    ),
-                    #height= dataset.get_resolution_Y(new_mapname),
-                    # #width= dataset.get_resolution_X(new_mapname) - 300
-                )
-            }
-        )
-
-    @staticmethod
     def puzzle_image(puzzle):
         '''
         Finds and shows the image of a certain puzzle
@@ -220,6 +170,7 @@ class Graphs:
             src= '/MetroMapsEyeTracking/stimuli/' + puzzle
         )
 
+    ############### Start Adjacency Matrix ######################################################
     @staticmethod
     def basic_adjacency(dataset, new_mapname, compare_method, colortype, ordering):
         '''
@@ -243,15 +194,25 @@ class Graphs:
             path1 = all_paths[i]
             for j in range(i, len(all_users)):
                 path2 = all_paths[j]
-                similarity = Graphs.compare(compare_method, path1, path2)
+                similarity = np.round(Graphs.compare(compare_method, path1, path2), 4)
                 matrix[i, j] = similarity
                 matrix[j, i] = similarity
 
         # Order the matrix
         #if ordering == 'alphabet':
 
+        # Determine the hovertext and colorscale
+        text= []
+        for x in range(len(all_paths)):
+            midterm= []
+            for y in range(len(all_paths)):
+                midterm.append('Similarity of user {} and {} = {}'.format(
+                    all_users[x],
+                    all_users[y],
+                    matrix[x, y],
+                ))
+            text.append(midterm)
 
-        # Determine the colorscale
         colordict = {
             'def': 'RdBu',
             'hot': 'Hot',
@@ -281,10 +242,13 @@ class Graphs:
                         'y': all_users,
                         'type': 'heatmap',
                         'colorscale': colordict[colortype],
+                        'colorbar': {'showticklabels': False},
+                        'hoverinfo': 'text',
+                        'text': text
                     }
                 ],
                 'layout': go.Layout(
-                    title= 'Adjacency Matrix of puzzle: {}'.format(new_mapname[3:-4]),
+                    title= 'Adjacency Matrix of {} based on {}'.format(new_mapname[3:-4], compare_method),
                     yaxis= dict(autorange= 'reversed')
                 )
             }
@@ -301,9 +265,9 @@ class Graphs:
         :param path2: Path to compare with path1
         :return: A value that resembles the similarity between path1 and path2
         '''
-        if method == 'bound':
+        if method == 'Bounding Box':
             return Graphs.adjcompare_bounding_box(path1, path2)
-        if method == 'euc':
+        if method == 'the Euclidean Distance':
             return Graphs.adjcompare_euc_dist(path1, path2)
         return Graphs.adjcompare_random()
 
@@ -355,72 +319,126 @@ class Graphs:
         return 0
 
     @staticmethod
-    def adjcompare_bounding_box_dep(path1, path2):
+    def adjcompare_euc_dist(path1, path2, max_X = 1920, max_Y = 1200):
         '''
+        Calculates the similarity between 2 scanpaths based on the euclidean distance between the two
 
-        :author: Maaike? Finish this
-        :param path1:
-        :param path2:
-        :return:
+        :author: Annelies van de Wetering
+        :param path1: The scanpath (in DataFrame) to compare to path2
+        :param path2: The scanpath (in DataFrame) to compare to path1
+        :return: A similarity value between 0 and 1
         '''
-        Rect = namedtuple('Rectangle', 'xmin ymin xmax ymax')
-        xmin_1 = min([path1[i][5] for i in range(len(path1))])
-        xmax_1 = max([path1[i][5] for i in range(len(path1))])
-        ymin_1 = min([path1[i][6] for i in range(len(path1))])
-        ymax_1 = max([path1[i][6] for i in range(len(path1))])
-        R1 = Rect(xmin_1, ymin_1, xmax_1, ymax_1)
+        x1 = np.array(path1['MappedFixationPointX'], dtype=float)
+        y1 = np.array(path1['MappedFixationPointY'], dtype=float)
+        x2 = np.array(path2['MappedFixationPointX'], dtype=float)
+        y2 = np.array(path2['MappedFixationPointY'], dtype=float)
 
-        xmin_2 = min([path2[i][5] for i in range(len(path2))])
-        xmax_2 = max([path2[i][5] for i in range(len(path2))])
-        ymin_2 = min([path2[i][6] for i in range(len(path2))])
-        ymax_2 = max([path2[i][6] for i in range(len(path2))])
-        R2 = Rect(xmin_2, ymin_2, xmax_2, ymax_2)
-
-        dx = min(R1.xmax, R2.xmax) - max(R1.xmin, R2.xmin)
-        dy = min(R1.ymax, R2.ymax) - max(R1.ymin, R2.ymin)
-
-        if (dx >= 0) and (dy >= 0):
-            area = dx * dy
-            area_1 = (R1.xmax - R1.xmin) * (R1.ymax - R1.ymin)
-            area_2 = (R2.xmax - R2.xmin) * (R2.ymax - R2.ymin)
-            total_area = area_1 + area_2
-            return area / total_area
-        else:
-            return 0
-
-    @staticmethod
-    def adjcompare_euc_dist(path1, path2):
-        '''
-
-        :author: Annelies? Finish this
-        :param path1:
-        :param path2:
-        :return:
-        '''
-        x1 = np.array(np.matlib.repmat(path1[:, 4].reshape((len(path1), 1)), 1, len(path2)))
-        x2 = np.array(np.matlib.repmat(path2[:, 4].reshape((1, len(path2))), len(path1), 1))
-
-        y1 = np.array(np.matlib.repmat(path1[:, 5].reshape((len(path1), 1)), 1, len(path2)))
-        y2 = np.array(np.matlib.repmat(path2[:, 5].reshape((1, len(path2))), len(path1), 1))
-
-        distx = np.power(x1 - x2, 2)
-        disty = np.power(y1 - y2, 2)
+        distx = np.power(x1[:, None] - x2, 2)
+        disty = np.power(y1[:, None] - y2, 2)
 
         Euc_dist = np.array(np.power(distx + disty, 0.5))
         Euc_dist_colmin = np.amin(Euc_dist, axis=0)  # minimum distances for sequence A
         Euc_dist_rowmin = np.amin(Euc_dist, axis=1)  # minimum distances for sequence B
 
         Euc_dist_tot = np.sum(Euc_dist_colmin) + np.sum(Euc_dist_rowmin)
-        map_dimensions = np.array([1920, 1200])
+        map_dimensions = np.array([max_X, max_Y])  # the real dimensions of a map should be added
         m = np.power(np.power(map_dimensions[0], 2) + np.power(map_dimensions[1], 2),
                      0.5)  # calculate maximum possible distance!
         Euc_dist_tot_norm = 1 / ((len(Euc_dist_colmin) + len(Euc_dist_rowmin)) * m) * Euc_dist_tot
 
-        return Euc_dist_tot_norm
-
+        return 1 - Euc_dist_tot_norm
+############## End of Adjacency Matrix ############################################################
 
     @staticmethod
-    def get_visual_attention_map(stimuli, dataset):
+    def get_visual_attention_map(dataset, new_mapname, visual_method, color):
+        if visual_method == 'attention':
+            return Graphs.visual_heatmap(dataset, new_mapname)
+        elif visual_method == 'gaze':
+            return Graphs.visual_gaze_plot(dataset, new_mapname)
+        else:
+            return Graphs.puzzle_image(new_mapname) #If nothing was determined, return a picture of the puzzle
+
+    @staticmethod
+    def visual_gaze_plot(dataset, new_mapname):
+        '''
+        Creates a gazeplot with the associated puzzle map as background
+
+        :author: Yuri Maas
+        :param new_mapname: The name of the puzzle to be in the graph
+        :param dataset: The Class object from where to take the data
+        :return: Graph object with the corresponding map in it
+        '''
+        imageroute = '/MetroMapsEyeTracking/stimuli/'
+        # Load in the associated data (An array of dataframes where every dataframe is 1 user)
+        data_puzzle = dataset.get_puzzle_data(new_mapname)
+        # Split the data into the x, y, duration and users
+        x_coords = [data_puzzle[i]['MappedFixationPointX'] for i in range(len(data_puzzle))]
+        y_coords = [data_puzzle[i]['MappedFixationPointY'] for i in range(len(data_puzzle))]
+        duration = [data_puzzle[i]['FixationDuration'] for i in range(len(data_puzzle))]
+        users = [data_puzzle[i]['user'] for i in range(len(data_puzzle))]
+        # Create a
+        return dcc.Graph(
+            id='single-graph',
+            config={
+                'modeBarButtonsToRemove': [
+                    'sendDataToCloud',
+                    'zoomIn2d',
+                    'zoomOut2d',
+                    'hoverClosestCartesian',
+                    'hoverCompareCartesian',
+                    'autoScale2d',
+                    'toggleSpikelines'
+                ],
+            },
+            figure={
+                'data': [go.Scatter(x= x_coords[i],
+                                    # The plot has to be horizontally flipped since the axis goes from down to up
+                                    y= dataset.get_resolution_Y(new_mapname) - y_coords[i],
+                                    mode= 'lines+markers',
+                                    name= 'User: {}'.format(next(iter(users[i]))),
+                                    marker= dict(
+                                        # Size of the marker depends on duration
+                                        size= np.sqrt(duration[i]),
+                                    ),
+                                    )
+                          for i in range(len(x_coords))],
+                'layout': go.Layout(
+                    images=[
+                        dict(
+                            source=imageroute + new_mapname,
+                            xref='x',
+                            yref='y',
+                            x=0,
+                            y=0,
+                            sizex=dataset.get_resolution_X(new_mapname),
+                            sizey=dataset.get_resolution_Y(new_mapname),
+                            xanchor='left',
+                            yanchor='bottom',
+                            opacity=0.8,
+                            layer='below',
+                            sizing='stretch',
+                        )
+                    ],
+                    title= 'Gaze plot of puzzle: {}'.format(new_mapname[3:-4]),
+                    hovermode= 'closest',
+                    xaxis=dict(
+                        range=[0, dataset.get_resolution_X(new_mapname)],
+                        showline= False,
+                        showgrid= False,
+                        showticklabels= False,
+                    ),
+                    yaxis=dict(
+                        range=[0, dataset.get_resolution_Y(new_mapname)],
+                        showline= False,
+                        showgrid= False,
+                        showticklabels= False,
+                    ),
+                )
+            }
+        )
+
+    @staticmethod
+    def visual_heatmap(dataset, stimuli):
         """
         gets the image of a certain stimuli
         :author Maaike van Delft
@@ -431,14 +449,14 @@ class Graphs:
         df = dataset.get_puzzle_data(stimuli)
 
         #Get x and y cooridnates
-        dfx = df[:, 4]
-        dfy = df[:, 5]
+        dfx = df['MappedFixationPointX']
+        dfy = df['MappedFixationPointY']
         x = np.array(dfx, dtype=float)
         y = np.array(dfy, dtype=float)
 
 
         script_dir = sys.path[0]
-        image_path = os.path.join(script_dir, 'MetroMapsEyeTracking/stimuli/' + stimuli)
+        image_path = os.path.join(script_dir, '/MetroMapsEyeTracking/stimuli/' + stimuli)
         img = Image.open(image_path)
         plt.imshow(img)
 
@@ -454,23 +472,3 @@ class Graphs:
         plt.savefig(figfile, format='png')
         figfile.seek(0)
         return base64.b64encode(figfile.getvalue())
-
-
-    @staticmethod
-    def gaze_plot(dataset, stimuli, color):
-        data = dataset.get_puzzle_data()
-        image_file = '/MetroMapsEyeTracking/stimuli/' + stimuli
-        img = Image.open(image_file, )
-        x_gaze = np.array(data['MappedFixationPointX'], dtype=float)
-        y_gaze = np.array(data['MappedFixationPointY'], dtype=float)
-        #fixationduration
-        d_gaze = np.array(data['FixationDuration'], dtype=float)
-        plt.imshow(img)
-        # put a red dot, size 40, at 2 locations:
-        #color options as many as there are users. Take red, deepskyblue, lawngreen, blue, darkviolet, fuchsia, maroon, darkorange, darkgreen, saddlebrown, mediumspringgreen, slategrey.
-
-        plt.scatter(x_gaze , y_gaze , c= color, marker='o', alpha=0.4, s=d_gaze, zorder=2)
-        plt.plot(x_gaze, y_gaze, color, alpha=0.5)
-        gaze_plot = plt.axis('off')
-
-        return gaze_plot

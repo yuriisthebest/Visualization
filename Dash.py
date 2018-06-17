@@ -21,7 +21,7 @@ defaultmap = '03_Bordeaux_S1.jpg'
 
 app = dash.Dash()
 
-app.config.suppress_callback_exceptions= True
+app.config['suppress_callback_exceptions'] = True
 
 app.layout = html.Div([
     # Global Structure ->   Input,
@@ -48,11 +48,11 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='Input-add_options-adjacency_order'
             ),
-            html.Img(
-                id='puzzle-image'
+            dcc.RadioItems(
+                id='Input-add_options-metro_map'
             ),
-            dcc.Graph(
-                id='adjacency-matrix'
+            dcc.Dropdown(
+                id='Input-add_options-gaze_color'
             ),
         ]
     ),
@@ -231,12 +231,15 @@ app.layout = html.Div([
      State('Input-add_options-adjacency', 'value'),
      State('Input-add_options-adjacency_color', 'value'),
      State('Input-add_options-adjacency_order', 'value'),
+     State('Input-add_options-metro_map', 'value'),
+     State('Input-add_options-gaze_color', 'value'),
      ]
 )
 def update_storage(n_clicks, input_puzzle,          # What puzzle to use
                    amount_panels, selected_panel,   # Panel selections
                    vis_type,                        # Type of visualization (Puzzle, Adjacency matrix, Mapping)
-                   compare_method, color, ordering  # For adjacency matrices
+                   compare_method, color_adj, ordering, # For adjacency matrices
+                   visual_method, color_vis_att,     # For Metro Maps
                    ):
     '''
     Updates the visualization based on the input parameters
@@ -260,9 +263,9 @@ def update_storage(n_clicks, input_puzzle,          # What puzzle to use
         if vis_type == 'puzzle':
             graph = Graphs.puzzle_image(input_puzzle)
         elif vis_type == 'mm':
-            graph = Graphs.test_map(input_puzzle, dataset)
+            graph = Graphs.get_visual_attention_map(dataset, input_puzzle, visual_method, color_vis_att)
         elif vis_type == 'adj':
-            graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color, ordering)
+            graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color_adj, ordering)
 
         plots.set_graph(selected_panel,
                         graph)
@@ -329,8 +332,8 @@ def update_visualization_options(input_type):
                 id='Input-add_options-adjacency',
                 options=[
                     {'label': 'Test comparison', 'value': 'test'},
-                    {'label': 'Bounding box', 'value': 'bound'},
-                    {'label': 'Euclidean distance', 'value': 'euc'},
+                    {'label': 'Bounding box', 'value': 'Bounding Box'},
+                    {'label': 'Euclidean distance', 'value': 'the Euclidean Distance'},
                 ],
                 labelStyle={'display': 'inline-block',
                             'marginRight': 80}
@@ -378,6 +381,7 @@ def update_visualization_options(input_type):
     if input_type == 'mm':
         return [
             # Choose puzzle, Choose map overlay
+            html.Label('Visual Attention Map'),
             dcc.RadioItems(
                 id='Input-add_options-metro_map',
                 options=[
@@ -386,6 +390,30 @@ def update_visualization_options(input_type):
                 ],
                 labelStyle= {'display': 'inline-block',
                              'marginRight': 80}
+            ),
+            # red, deepskyblue, lawngreen, blue, darkviolet, fuchsia, maroon,
+            # darkorange, darkgreen, saddlebrown, mediumspringgreen, slategrey
+            html.Label('Color'),
+            dcc.Dropdown(
+                id='Input-add_options-gaze_color',
+                options=[
+                    {'label': 'Red', 'value': 'red'},
+                    {'label': 'Blue', 'value': 'blue'},
+                    {'label': 'Sky Blue', 'value': 'deepskyblue'},
+                    {'label': 'Dark Sky', 'value': 'darkviolet'},
+                    {'label': 'Green', 'value': 'darkgreen'},
+                    {'label': 'Light Green', 'value': 'lawngreen'},
+                    {'label': 'Even lighter Green', 'value': 'mediumspringgreen'},
+                    {'label': 'Fuchsia', 'value': 'fuchsia'},
+                    {'label': 'Maroon', 'value': 'maroon'},
+                    {'label': 'Orange', 'value': 'darkorange'},
+                    {'label': 'Horse Brown', 'value': 'saddlebrown'},
+                    {'label': 'Gray with an A or Grey with an E?', 'value': 'slategrey'},
+                ],
+                searchable=False,
+                clearable=False,
+                placeholder='Select color',
+                value='red',
             ),
             html.Hr(),
             html.Div(
@@ -422,18 +450,30 @@ def update_map_image(input_puzzle):
 )
 def display_click_data(clickdata, hoverData):
     if hoverData is not None:
-        hover = html.P('Hover data:\nComparing scanpath of user {} with {}.\nTheir similarity = {}'.format(
+        hover = dcc.Markdown('''
+#### Hover:
+
+Comparing scanpath of user {} with {}.
+Similarity = {}
+        '''.format(
             hoverData['points'][0]['y'],
             hoverData['points'][0]['x'],
-            hoverData['points'][0]['z']))
+            hoverData['points'][0]['z']
+        ))
     else:
         hover = None
 
     if clickdata is not None:
-        click = html.P('Click data:\nComparing scanpath of user {} with {}.\nTheir similarity = {}'.format(
+        click= dcc.Markdown('''
+#### Click:
+
+Comparing scanpath of user {} with {}.
+Similarity = {}
+        '''.format(
             clickdata['points'][0]['y'],
             clickdata['points'][0]['x'],
-            clickdata['points'][0]['z']))
+            clickdata['points'][0]['z'],
+        ))
     else:
         click = None
 
