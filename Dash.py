@@ -61,7 +61,7 @@ app.layout = html.Div([
         id='Input-column',
         style={
             'width': '15%',
-            'display': 'inline-block',
+            'display': 'inline-grid',
             'marginLeft' : 5,
             'marginRight': 5
         },
@@ -189,14 +189,18 @@ app.layout = html.Div([
 
 
     html.Div(
-        id='Visualization',
+        id='VisualizationHead',
         style={
             'width': '70%',
-            'display': 'inline-block',
+            'display': 'inline-grid',
             'marginLeft': 5,
-            'marginRight': 5
+            'marginRight': 5,
         },
-        children= Layout.no_graphs(),
+        children= html.Div(
+            id='Visualization',
+            style= {'display': 'inline-block'},
+            children= Layout.no_graphs(),
+        ),
     ),
 
 
@@ -204,7 +208,7 @@ app.layout = html.Div([
         id='Output',
         style={
             'width': '12%',
-            'display': 'inline-block'
+            'display': 'inline-grid',
         },
         children=[
             html.H1('Information'),
@@ -331,7 +335,7 @@ def update_visualization_options(input_type):
             dcc.RadioItems(
                 id='Input-add_options-adjacency',
                 options=[
-                    {'label': 'Test comparison', 'value': 'test'},
+                    {'label': 'Test comparison', 'value': 'Randomness'},
                     {'label': 'Bounding box', 'value': 'Bounding Box'},
                     {'label': 'Euclidean distance', 'value': 'the Euclidean Distance'},
                 ],
