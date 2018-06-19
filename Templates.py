@@ -554,3 +554,62 @@ class Graphs:
         plt.savefig(figfile, format='png')
         figfile.seek(0)
         return base64.b64encode(figfile.getvalue())
+
+    @staticmethod
+    def get_subscanpaths(stimuliname, unique_user):
+        """
+        gets all the subscanpaths of a certain stimuli of a certain user
+        :author Maaike van Delft & Annelies van de Wetering
+        :param stimuliname = the full stimliname (string) including the 2 digits at the beginning and .jpeg at the end
+        :param unique_user = a string: p1, p2 ,......... p9.
+        :returns returns 2 arrays, one with the x cooridnates and 1 with the y coordinates
+        """
+
+        stimuli_data = dataset.get_puzzle_data(stimuliname)
+
+        unique_user_data = np.array(stimuli_data[stimuli_data[:, 6] == unique_user])
+        x = unique_user_data[:, 4]
+        y = unique_user_data[:, 5]
+
+        subsx = []
+        subsy = []
+
+        for i in range(len(x)):
+            n = i + 1
+            while n <= len(x):
+                subx = x[i:n]
+                subsx.append(subx)
+                n += 1
+        for j in range(len(y)):
+            m = j + 1
+            while m <= len(y):
+                suby = y[j:m]
+                subsy.append(suby)
+                m += 1
+
+        return subsx, subsy
+
+    @staticmethod
+    def get_specific_subscanpath(stimuliname, unique_user, length_scanpath):
+        """
+        gets a scanpath of a certain stimuli of a certain person with a certain length
+        :author Maaike van Delft & Annelies van de Wetering
+        :param stimuliname = the full stimliname (string) including the 2 digits at the beginning and .jpeg at the end
+        :param unique_user = a string: p1, p2 ,......... p9.
+        :param length_scanpath a integer, which length scanpath you want to retrieve
+        :returns returns 2 arrays, one with the x cooridnates and 1 with the y coordinates
+        """
+        x1, y1 = Layout.get_subscanpaths(stimuliname, unique_user)
+        x2 = []
+        y2 = []
+
+        for i in x1:
+            if len(i) == length_scanpath:
+                x2.append(i)
+
+        for j in y1:
+            if len(j) == length_scanpath:
+                y2.append(j)
+
+        return x2, y2
+
