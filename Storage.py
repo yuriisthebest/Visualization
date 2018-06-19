@@ -54,6 +54,41 @@ class Data:
         :param max_pixels: The maximum amount of pixels a fixation is allowed to be outside the map
         """
         for i in range(len(data)):
+            # If a stimulus is misspelled, correct it
+            text= data.loc[i,('StimuliName')]
+            if '04_' in text and '_S2.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='04_Köln_S2.jpg')
+
+            elif '04b_' in text and '_S1.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='04b_Köln_S1.jpg')
+
+            elif '12_' in text and '_S2.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='12_Brüssel_S2.jpg')
+
+            elif '12b_' in text and '_S1.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='12b_Brüssel_S1.jpg')
+
+            elif '14_' in text and '_S2.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='14_Düsseldorf_S2.jpg')
+
+            elif '14b_' in text and '_S1.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='14b_Düsseldorf_S1.jpg')
+
+            elif '15_' in text and '_S2.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='15_Göteborg_S2.jpg')
+
+            elif '15b_' in text and '_S1.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='15b_Göteborg_S1.jpg')
+
+            elif '24_' in text and '_S2.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='24_Zürich_S2.jpg')
+
+            elif '24_' in text and '_S1.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='24_Zürich_S1.jpg')
+
+            elif '24b_' in text and '_S1.jpg' in text:
+                data.set_value(index=i, col='StimuliName', value='24b_Zürich_S1.jpg')
+
             # Gets the mapresolution of the current fixation in the loop
             currentRes = resolutions.get_values()[int(data['StimuliName'][i][:2]) - 1]
 
@@ -63,38 +98,7 @@ class Data:
                     data['MappedFixationPointY'][i] > (currentRes[2] + max_pixels)) or (
                     data['MappedFixationPointY'][i] < -max_pixels):
                 data = data.drop([i])
-            '''
-            # If a stimulus is misspelled, correct it
-            if data['StimuliName'][i] == '04_KÃ¶ln_S2.jpg':
-                data['StimuliName'][i] = '04_Köln_S2.jpg'
 
-            if data['StimuliName'][i] == '04b_KÃ¶ln_S1.jpg':
-                data['StimuliName'][i] = '04b_Köln_S1.jpg'
-
-            if data['StimuliName'][i] == '12_BrÃ¼ssel_S2.jpg':
-                data['StimuliName'][i] = '12_Brüssel_S2.jpg'
-
-            if data['StimuliName'][i] == '12b_BrÃ¼ssel_S1.jpg':
-                data['StimuliName'][i] = '12b_Brüssel_S1.jpg'
-
-            if data['StimuliName'][i] == '14_DÃ¼sseldorf_S2.jpg':
-                data['StimuliName'][i] = '14_Düsseldorf_S2.jpg'
-
-            if data['StimuliName'][i] == '14b_DÃ¼sseldorf_S1.jpg':
-                data['StimuliName'][i] = '14b_Düsseldorf_S1.jpg'
-
-            if data['StimuliName'][i] == '15_GÃ¶teborg_S2.jpg':
-                data['StimuliName'][i] = '15_Göteborg_S2.jpg'
-
-            if data['StimuliName'][i] == '15b_GÃ¶teborg_S1.jpg':
-                data['StimuliName'][i] = '15b_Göteborg_S1.jpg'
-
-            if data['StimuliName'][i] == '24_ZÃ¼rich_S2.jpg':
-                data['StimuliName'][i] = '24_Zürich_S2.jpg'
-
-            if data['StimuliName'][i] == '24b_ZÃ¼rich_S1.jpg':
-                data['StimuliName'][i] = '24_Zürich_S2.jpg'
-            '''
         # Reset the index of the dataframe index so it goes from 0 to len(data) without skipping
         clean_data = data.reset_index()
         return clean_data
