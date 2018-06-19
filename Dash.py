@@ -54,6 +54,9 @@ app.layout = html.Div([
             dcc.Dropdown(
                 id='Input-add_options-gaze_color'
             ),
+            dcc.Slider(
+                id='Input-add_options-heatbin'
+            )
         ]
     ),
 
@@ -135,7 +138,6 @@ app.layout = html.Div([
                         ],
                         searchable= False,
                         placeholder= 'Select an amount of panels',
-                        #value= 4
                     ),
 
                     dcc.RadioItems(
@@ -153,9 +155,11 @@ app.layout = html.Div([
                 ]
             ),
 
+            # Division for the radioitems to choose the visualization type
             html.Div(
                 id= 'Input-vis_types',
                 children=[
+                    html.Label('Visualization Type'),
                     dcc.RadioItems(
                         id= 'Input-vis_types-types',
                         options=[
@@ -170,6 +174,7 @@ app.layout = html.Div([
                 ]
             ),
 
+            # Division for additional options (default map options) based on the choosen visualization type
             html.Div(
                 id= 'Input-add_options',
                 children= [
@@ -181,13 +186,10 @@ app.layout = html.Div([
                     ),
                 ]
             ),
-            html.Div(
-                id= 'Input-puzzle (WIP',
-            )
         ]
     ),
 
-
+    # Upper division for the visualization, this division determines the borders where the graphs have to fit in
     html.Div(
         id='VisualizationHead',
         style={
@@ -196,6 +198,7 @@ app.layout = html.Div([
             'marginLeft': 5,
             'marginRight': 5,
         },
+        # Inner division for the visualization, all the graphs will be put in this division
         children= html.Div(
             id='Visualization',
             style= {'display': 'inline-block'},
@@ -203,7 +206,7 @@ app.layout = html.Div([
         ),
     ),
 
-
+    # Division for the information output
     html.Div(
         id='Output',
         style={
@@ -237,13 +240,14 @@ app.layout = html.Div([
      State('Input-add_options-adjacency_order', 'value'),
      State('Input-add_options-metro_map', 'value'),
      State('Input-add_options-gaze_color', 'value'),
+     State('Input-add_options-heatbin', 'value'),
      ]
 )
 def update_storage(n_clicks, input_puzzle,          # What puzzle to use
                    amount_panels, selected_panel,   # Panel selections
                    vis_type,                        # Type of visualization (Puzzle, Adjacency matrix, Mapping)
                    compare_method, color_adj, ordering, # For adjacency matrices
-                   visual_method, color_vis_att,     # For Metro Maps
+                   visual_method, color_vis_att, bin_size   # For Metro Maps
                    ):
     '''
     Updates the visualization based on the input parameters
@@ -267,7 +271,7 @@ def update_storage(n_clicks, input_puzzle,          # What puzzle to use
         if vis_type == 'puzzle':
             graph = Graphs.puzzle_image(input_puzzle)
         elif vis_type == 'mm':
-            graph = Graphs.get_visual_attention_map(dataset, input_puzzle, visual_method, color_vis_att)
+            graph = Graphs.get_visual_attention_map(dataset, input_puzzle, visual_method, color_vis_att, bin_size)
         elif vis_type == 'adj':
             graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color_adj, ordering)
 
@@ -329,12 +333,20 @@ def update_visualization_options(input_type):
     # puzzle = Puzzle
     if input_type == 'adj':
         return [
+            html.Label('Select Puzzle or User'),
+            dcc.RadioItems(
+                id= 'Input-add_options-adjacency-type',
+                options= [{'label': 'Puzzle', 'value': 'puzzle'},
+                          {'label': 'User', 'value': 'user'}
+                ]
+            ),
+
+            html.Hr(),
             # What comparison method
             html.Label('Comparison method'),
             dcc.RadioItems(
                 id='Input-add_options-adjacency',
                 options=[
-                    {'label': 'Test comparison', 'value': 'Randomness'},
                     {'label': 'Bounding box', 'value': 'Bounding Box'},
                     {'label': 'Euclidean distance', 'value': 'the Euclidean Distance'},
                 ],
@@ -394,31 +406,37 @@ def update_visualization_options(input_type):
                 labelStyle= {'display': 'inline-block',
                              'marginRight': 80}
             ),
-            # red, deepskyblue, lawngreen, blue, darkviolet, fuchsia, maroon,
-            # darkorange, darkgreen, saddlebrown, mediumspringgreen, slategrey
-            html.Label('Color'),
+            # Dropdown menu for choosing the colors for the heatmap
+            html.Label('Heatmap Color'),
             dcc.Dropdown(
                 id='Input-add_options-gaze_color',
                 options=[
-                    {'label': 'Red', 'value': 'red'},
-                    {'label': 'Blue', 'value': 'blue'},
-                    {'label': 'Sky Blue', 'value': 'deepskyblue'},
-                    {'label': 'Dark Sky', 'value': 'darkviolet'},
-                    {'label': 'Green', 'value': 'darkgreen'},
-                    {'label': 'Light Green', 'value': 'lawngreen'},
-                    {'label': 'Even lighter Green', 'value': 'mediumspringgreen'},
-                    {'label': 'Fuchsia', 'value': 'fuchsia'},
-                    {'label': 'Maroon', 'value': 'maroon'},
-                    {'label': 'Orange', 'value': 'darkorange'},
-                    {'label': 'Horse Brown', 'value': 'saddlebrown'},
-                    {'label': 'Gray with an A or Grey with an E?', 'value': 'slategrey'},
+                    {'label': 'Default', 'value': 'def'},
+                    {'label': 'Hot', 'value': 'hot'},
+                    {'label': 'Green', 'value': 'green'},
+                    {'label': 'Blue', 'value': 'blueish'},
+                    {'label': 'Viridis', 'value': 'vir'},
+                    {'label': 'Electric', 'value': 'elec'},
+                    {'label': 'Rainbow', 'value': 'rainbow', 'disabled': 'True'},
                 ],
                 searchable=False,
                 clearable=False,
                 placeholder='Select color',
-                value='red',
+                value='blueish',
             ),
-            html.Hr(),
+            # Slider for choosing the amount of bins for the heatmap
+            html.Label('Heatmap Bin-amount'),
+            dcc.Slider(
+                id= 'Input-add_options-heatbin',
+                included= False,
+                min= 5,
+                max= 50,
+                value= 50,
+                marks= {i: '{}'.format(i) for i in range(5, 51) if (i+10) %15 == 0},
+            ),
+
+            # Section with the dropdown menu for choosing a puzzle to visualize (including picture underneath)
+            html.Hr(style= {'marginTop': 20}),
             html.Div(
                 id= 'Input-select_puzzle',
                 children= Layout.select_puzzle(dataset)
@@ -452,6 +470,14 @@ def update_map_image(input_puzzle):
      Input('adjacency-matrix', 'hoverData')]
 )
 def display_click_data(clickdata, hoverData):
+    '''
+    Updates information screen based on user actions
+
+    :author: Yuri Maas
+    :param clickdata: The data of the point a user has clicked on
+    :param hoverData: The data of the point a user is hovering (has hovered) over
+    :return: Markdown object with text to show the user vital information
+    '''
     if hoverData is not None:
         hover = dcc.Markdown('''
 #### Hover:

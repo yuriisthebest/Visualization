@@ -57,37 +57,37 @@ class Data:
             # If a stimulus is misspelled, correct it
             text= data.loc[i,('StimuliName')]
             if '04_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='04_Köln_S2.jpg')
+                data.at[i, 'StimuliName']= '04_Köln_S2.jpg'
 
             elif '04b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='04b_Köln_S1.jpg')
+                data.at[i, 'StimuliName'] = '04b_Köln_S1.jpg'
 
             elif '12_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='12_Brüssel_S2.jpg')
+                data.at[i, 'StimuliName'] = '12_Brüssel_S2.jpg'
 
             elif '12b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='12b_Brüssel_S1.jpg')
+                data.at[i, 'StimuliName'] = '12b_Brüssel_S1.jpg'
 
             elif '14_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='14_Düsseldorf_S2.jpg')
+                data.at[i, 'StimuliName'] = '14_Düsseldorf_S2.jpg'
 
             elif '14b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='14b_Düsseldorf_S1.jpg')
+                data.at[i, 'StimuliName'] = '14b_Düsseldorf_S1.jpg'
 
             elif '15_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='15_Göteborg_S2.jpg')
+                data.at[i, 'StimuliName'] = '15_Göteborg_S2.jpg'
 
             elif '15b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='15b_Göteborg_S1.jpg')
+                data.at[i, 'StimuliName'] = '15b_Göteborg_S1.jpg'
 
             elif '24_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='24_Zürich_S2.jpg')
+                data.at[i, 'StimuliName'] = '24_Zürich_S2.jpg'
 
             elif '24_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='24_Zürich_S1.jpg')
+                data.at[i, 'StimuliName'] = '24_Zürich_S1.jpg'
 
             elif '24b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='24b_Zürich_S1.jpg')
+                data.at[i, 'StimuliName'] = '24b_Zürich_S1.jpg'
 
             # Gets the mapresolution of the current fixation in the loop
             currentRes = resolutions.get_values()[int(data['StimuliName'][i][:2]) - 1]
