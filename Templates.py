@@ -199,7 +199,8 @@ class Graphs:
                 matrix[j, i] = similarity
 
         # Order the matrix
-        #if ordering == 'alphabet':
+        if ordering == 'alphabet':
+            all_users, matrix = Graphs.reorder_alphabet(all_users, matrix)
 
         # Determine the hovertext and colorscale
         text= []
@@ -253,6 +254,40 @@ class Graphs:
                 )
             }
         )
+
+    @staticmethod
+    def reorder_alphabet(labels, matrix):
+        '''
+        Reorders the rows and columns of the adjacency matrix so that the labels are in alphabetical order
+
+        :author: Yuri Maas
+        :param labels: The labels of the axis of the matrix
+        :param matrix: The matrix to reorder
+        :return: The labels in alphabetical order with the associated matrix
+        '''
+        # Function to go from the user name (p#) to an interger for sorting purposes
+        def remove_p(element):
+            return int(element.strip('p'))
+
+        # Create an aplhabetically sorted list of the users
+        user_sort_index= sorted(labels, key=remove_p)
+        # Check for all users what index they have in the new sorted list and make a list of those indexes
+        sort_index= [index
+                     for user in user_sort_index
+                     for index in range(len(user_sort_index))
+                     if user == labels[index]]
+        sort_matrix= np.zeros((len(sort_index), len(sort_index)))
+        # Create an elementary matrix that can reorder the columns based on the sort_index
+        for i in range(len(sort_index)):
+            sort_matrix[sort_index[i], i]= 1
+
+        # Sort the labels according to the sort_index
+        new_labels= [labels[i] for i in sort_index]
+
+        # Sort the matrix (matrix[sort_index] reorder the rows of the matrix)
+        # Multiplying the row-sortedmatrix with the elementmatrix to reorder the columns will give the sorted matrix
+        new_matrix= np.matmul(matrix[sort_index], sort_matrix)
+        return new_labels, new_matrix
 
     @staticmethod
     def compare(method, path1, path2):
@@ -371,12 +406,12 @@ class Graphs:
         imageroute = '/MetroMapsEyeTracking/stimuli/'
         # Load in the associated data (An array of dataframes where every dataframe is 1 user)
         data_puzzle = dataset.get_puzzle_data(new_mapname)
-        # Split the data into the x, y, duration and users
+        # Split the data into the x, y, duration, users and custom hover text
         x_coords = [data_puzzle[i]['MappedFixationPointX'] for i in range(len(data_puzzle))]
         y_coords = [data_puzzle[i]['MappedFixationPointY'] for i in range(len(data_puzzle))]
         duration = [data_puzzle[i]['FixationDuration'] for i in range(len(data_puzzle))]
         users = [data_puzzle[i]['user'] for i in range(len(data_puzzle))]
-        # Create a
+        # Creates the gaze plot graph and returns
         return dcc.Graph(
             id='single-graph',
             config={
@@ -392,7 +427,7 @@ class Graphs:
             },
             figure={
                 'data': [go.Scatter(x= x_coords[i],
-                                    # The plot has to be horizontally flipped since the axis goes from down to up
+                                    # The plot has to be horizontally flipped since the y-axis goes from down to up
                                     y= dataset.get_resolution_Y(new_mapname) - y_coords[i],
                                     mode= 'lines+markers',
                                     name= 'User: {}'.format(next(iter(users[i]))),
@@ -438,7 +473,54 @@ class Graphs:
         )
 
     @staticmethod
-    def visual_heatmap(dataset, stimuli):
+    def visual_heatmap(dataset, new_mapname):
+        imageroute = '/MetroMapsEyeTracking/stimuli/'
+        data = dataset.get_puzzle_data(new_mapname)
+        values = []
+        return go.Figure(
+            data= [
+                dict(
+                    z = values,
+                    type= 'heatmap',
+                    colorscale = ['Viridis'],
+                )
+            ],
+            layout= dict(
+                images=[
+                    dict(
+                        source=imageroute + new_mapname,
+                        xref='x',
+                        yref='y',
+                        x=0,
+                        y=0,
+                        sizex=dataset.get_resolution_X(new_mapname),
+                        sizey=dataset.get_resolution_Y(new_mapname),
+                        xanchor='left',
+                        yanchor='bottom',
+                        opacity=0.8,
+                        layer='below',
+                        sizing='stretch',
+                    )
+                ],
+                title='Heatmap of puzzle: {}'.format(new_mapname[3:-4]),
+                hovermode='closest',
+                xaxis=dict(
+                    range=[0, dataset.get_resolution_X(new_mapname)],
+                    showline=False,
+                    showgrid=False,
+                    showticklabels=False,
+                ),
+                yaxis=dict(
+                    range=[0, dataset.get_resolution_Y(new_mapname)],
+                    showline=False,
+                    showgrid=False,
+                    showticklabels=False,
+                ),
+            )
+        )
+
+    @staticmethod
+    def visual_heatmap2(dataset, stimuli):
         """
         gets the image of a certain stimuli
         :author Maaike van Delft

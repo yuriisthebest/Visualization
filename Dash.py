@@ -161,7 +161,7 @@ app.layout = html.Div([
                         options=[
                             {'label': 'Puzzle', 'value': 'puzzle'},
                             {'label': 'Adjacency Matrix', 'value': 'adj'},
-                            {'label': 'Metro Map', 'value': 'mm'}
+                            {'label': 'Visual Attention Map', 'value': 'mm'}
                         ],
                         labelStyle= {'display': 'inline-block',
                                      'marginRight': 80}
@@ -309,8 +309,7 @@ def update_panels(input_value):
     '''
     if input_value == None:
         return []
-    options = [{'label': 'Panel {}'.format(i+1), 'value': i} for i in range(input_value)]
-    return options
+    return [{'label': 'Panel {}'.format(i+1), 'value': i} for i in range(input_value)]
 
 # Add additional options once a visualization type has been chosen
 @app.callback(
@@ -385,12 +384,12 @@ def update_visualization_options(input_type):
     if input_type == 'mm':
         return [
             # Choose puzzle, Choose map overlay
-            html.Label('Visual Attention Map'),
+            html.Label('Visual Attention Options'),
             dcc.RadioItems(
                 id='Input-add_options-metro_map',
                 options=[
                     {'label': 'Gaze plot', 'value': 'gaze'},
-                    {'label': 'Attention map', 'value': 'attention'}
+                    {'label': 'Heatmap', 'value': 'attention'}
                 ],
                 labelStyle= {'display': 'inline-block',
                              'marginRight': 80}
