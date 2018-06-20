@@ -152,42 +152,48 @@ class Data:
          The 'value' has the raw names, with id and .jpg
 
         :author: Yuri Maas
-        :return: {'puzzlename_#puzzle', '#map_puzzlename_#puzzle.jpg'}
+        :return: {'puzzlename_#puzzle': '#map_puzzlename_#puzzle.jpg'}
         """
         return [{'label': i[3:-4], 'value': i} for i in self.__data['StimuliName'].unique()]
+
+    def get_allUserNames_fromPuzzle(self, puzzle):
+        '''
+        Returns a dictionary of all the users from a certain puzzle
+
+        :author: Yuri Maas
+        :param puzzle: The puzzle to get all the users from
+        :return: {'label': user, 'value': user}
+        '''
+        # Get the data from the puzzle
+        data = self.get_puzzle_data(puzzle)
+        # Create an array of all users
+        users = [data[i]['user'].unique()[0] for i in range(len(data))]
+        return [{'label': i, 'value': i} for i in users]
 
     def get_subscanpaths(self, stimuliname, unique_user):
         """
         gets all the subscanpaths of a certain stimuli of a certain user
-        :author Maaike van Delft & Annelies van de Wetering
+        :author Maaike van Delft & Annelies van de Wetering & Yuri Maas
         :param stimuliname = the full stimliname (string) including the 2 digits at the beginning and .jpeg at the end
         :param unique_user = a string: p1, p2 ,......... p9.
         :returns returns 2 arrays, one with the x cooridnates and 1 with the y coordinates
         """
+        # Load in all data from puzzle
+        puzzle_data = self.get_puzzle_data(stimuliname)
+        # Filter all the loaded data to only 1 (input) user
+        user_data = [puzzle_data[i]
+                     for i in range(len(puzzle_data))
+                     if puzzle_data[i]['user'].unique() == unique_user][0]
 
-        stimuli_data = self.get_puzzle_data(stimuliname)
 
-        unique_user_data = np.array(stimuli_data[stimuli_data[:, 6] == unique_user])
-        x = unique_user_data[:, 4]
-        y = unique_user_data[:, 5]
-
-        subsx = []
-        subsy = []
-
-        for i in range(len(x)):
-            n = i + 1
-            while n <= len(x):
-                subx = x[i:n]
-                subsx.append(subx)
-                n += 1
-        for j in range(len(y)):
-            m = j + 1
-            while m <= len(y):
-                suby = y[j:m]
-                subsy.append(suby)
-                m += 1
-
-        return subsx, subsy
+        subscanpaths= []
+        for i in range(len(user_data)):
+            length = i + 1
+            while length <= len(user_data):
+                subscan= user_data.iloc[i:length]
+                subscanpaths.append(subscan)
+                length += 1
+        return subscanpaths
 
     def get_specific_subscanpath(self, stimuliname, unique_user, length_scanpath):
         """

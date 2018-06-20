@@ -146,6 +146,132 @@ class Layout:
             ),
         ]
 
+    @staticmethod
+    def puzzle_options(dataset):
+        return [
+            html.Div(
+                id= 'Input-select-puzzle',
+                children= Layout.select_puzzle(dataset)
+            )
+        ]
+
+    @staticmethod
+    def visual_attention_options(dataset):
+        return [
+            # Choose puzzle, Choose map overlay
+            html.Label('Visual Attention Options'),
+            dcc.RadioItems(
+                id='Input-add_options-metro_map',
+                options=[
+                    {'label': 'Gaze plot', 'value': 'gaze'},
+                    {'label': 'Heatmap', 'value': 'attention'}
+                ],
+                labelStyle={'display': 'inline-block',
+                            'marginRight': 80}
+            ),
+            # Dropdown menu for choosing the colors for the heatmap
+            html.Label('Heatmap Color'),
+            dcc.Dropdown(
+                id='Input-add_options-gaze_color',
+                options=[
+                    {'label': 'Default', 'value': 'def'},
+                    {'label': 'Hot', 'value': 'hot'},
+                    {'label': 'Green', 'value': 'green'},
+                    {'label': 'Blue', 'value': 'blueish'},
+                    {'label': 'Viridis', 'value': 'vir'},
+                    {'label': 'Electric', 'value': 'elec'},
+                    {'label': 'Rainbow', 'value': 'rainbow', 'disabled': 'True'},
+                ],
+                searchable=False,
+                clearable=False,
+                placeholder='Select color',
+                value='blueish',
+            ),
+            # Slider for choosing the amount of bins for the heatmap
+            html.Label('Heatmap Bin-amount'),
+            dcc.Slider(
+                id='Input-add_options-heatbin',
+                included=False,
+                min=5,
+                max=50,
+                value=20,
+                marks={i: '{}'.format(i) for i in range(5, 51) if (i + 10) % 15 == 0},
+            ),
+
+            # Section with the dropdown menu for choosing a puzzle to visualize (including picture underneath)
+            html.Hr(style={'marginTop': 20}),
+            html.Div(
+                id='Input-select_puzzle',
+                children=Layout.select_puzzle(dataset)
+            )
+        ]
+
+    @staticmethod
+    def adjacency_options(dataset):
+        return [
+            html.Label('Select Puzzle or User'),
+            dcc.RadioItems(
+                id= 'Input-add_options-adjacency-type',
+                options= [{'label': 'Puzzle', 'value': 'puzzle'},
+                          {'label': 'User', 'value': 'user'}
+                ]
+            ),
+
+            html.Hr(),
+            # What comparison method
+            html.Label('Comparison method'),
+            dcc.RadioItems(
+                id='Input-add_options-adjacency',
+                options=[
+                    {'label': 'Bounding box', 'value': 'Bounding Box'},
+                    {'label': 'Euclidean distance', 'value': 'the Euclidean Distance'},
+                ],
+                labelStyle={'display': 'inline-block',
+                            'marginRight': 80}
+            ),
+
+            # What colorscale the adjacency matrix should use
+            html.Label('Color'),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_color',
+                options=[
+                    {'label': 'Default', 'value': 'def'},
+                    {'label': 'Hot', 'value': 'hot'},
+                    {'label': 'Green', 'value': 'green'},
+                    {'label': 'Viridis', 'value': 'vir'},
+                    {'label': 'Electric', 'value': 'elec', 'disabled': 'True'},
+                    {'label': 'Rainbow', 'value': 'rainbow'},
+                ],
+                searchable= False,
+                clearable= False,
+                placeholder= 'Select color',
+                value= 'def',
+            ),
+
+            # What ordering method to use
+            html.Label('Ordering'),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_order',
+                options=[
+                    {'label': 'No ordering', 'value': 'no'},
+                    {'label': 'Alphabetical ordering', 'value': 'alphabet'},
+                ],
+                searchable= False,
+                clearable= False,
+                value= 'no',
+            ),
+
+            # The puzzle selection (and user if choosen)
+            html.Hr(),
+            html.Div(
+                id= 'Input-select_user',
+            ),
+            html.Div(
+                id= 'Input-select_puzzle',
+                children= Layout.select_puzzle(dataset)
+            )
+        ]
+
 
 class Graphs:
     '''
@@ -173,27 +299,33 @@ class Graphs:
 
     ############### Start Adjacency Matrix ######################################################
     @staticmethod
-    def basic_adjacency(dataset, new_mapname, compare_method, colortype, ordering):
+    def basic_adjacency(dataset, new_mapname, adj_type, compare_method, colortype, ordering, input_user):
         '''
         Creates an adjacency matrix graph for the Plots panel
 
         :author: Yuri Maas
         :param dataset: The data to use to create the adjacency matrix
         :param new_mapname: The puzzle to use
+        :param adj_type: The type of adjacency matrix (Puzzle or User)
         :param compare_method: Which method to use to grade 2 paths on
         :param colortype: The color the heatmap should be
         :param ordering: The reorder algorithm that should be used
         :return: Heatmap object which shows the adjacency matrix for all paths of a certain puzzle
         '''
         # Get the fixation data for the puzzle
-        all_paths = dataset.get_puzzle_data(new_mapname)
-        all_users = [all_paths[i]['user'].unique()[0] for i in range(len(all_paths))]
-        # Set-up a matrix with only zeros to fill in
-        matrix = np.zeros((len(all_users), len(all_users)))
+        if adj_type == 'puzzle':
+            all_paths = dataset.get_puzzle_data(new_mapname)
+            labels = [all_paths[i]['user'].unique()[0] for i in range(len(all_paths))]
+        elif adj_type == 'user':
+            all_paths = dataset.get_subscanpaths(new_mapname, input_user)
+            labels = ['Length: {} from {}'.format(len(scan), scan.index[0]) for scan in all_paths]
 
-        for i in range(len(all_users)):
+        # Set-up a matrix with only zeros to fill in
+        matrix = np.zeros((len(labels), len(labels)))
+
+        for i in range(len(labels)):
             path1 = all_paths[i]
-            for j in range(i, len(all_users)):
+            for j in range(i, len(labels)):
                 path2 = all_paths[j]
                 similarity = np.round(Graphs.compare(compare_method, path1, path2), 4)
                 matrix[i, j] = similarity
@@ -201,19 +333,26 @@ class Graphs:
 
         # Order the matrix
         if ordering == 'alphabet':
-            all_users, matrix = Graphs.reorder_alphabet(all_users, matrix)
+            labels, matrix = Graphs.reorder_alphabet(labels, matrix, adj_type)
 
         # Determine the hovertext and colorscale
         text= []
         for x in range(len(all_paths)):
             midterm= []
             for y in range(len(all_paths)):
-                midterm.append('Similarity of user {} and {} = {}'.format(
-                    all_users[x],
-                    all_users[y],
-                    matrix[x, y],
-                ))
-            text.append(midterm)
+                if adj_type == 'puzzle':
+                    midterm.append('Similarity of user {} and {} = {}'.format(
+                        labels[x],
+                        labels[y],
+                        matrix[x, y],
+                    ))
+                elif adj_type == 'user':
+                    midterm.append('Similarity of scanpath with {} and scanpath with {} = {}'.format(
+                        labels[x],
+                        labels[y],
+                        matrix[x, y],
+                    ))
+                text.append(midterm)
 
         colordict = {
             'def': 'RdBu',
@@ -240,8 +379,8 @@ class Graphs:
                 'data': [
                     {
                         'z': matrix,
-                        'x': all_users,
-                        'y': all_users,
+                        'x': labels,
+                        'y': labels,
                         'type': 'heatmap',
                         'colorscale': colordict[colortype],
                         'colorbar': {'showticklabels': False},
@@ -257,7 +396,7 @@ class Graphs:
         )
 
     @staticmethod
-    def reorder_alphabet(labels, matrix):
+    def reorder_alphabet(labels, matrix, adj_type):
         '''
         Reorders the rows and columns of the adjacency matrix so that the labels are in alphabetical order
 
@@ -267,10 +406,14 @@ class Graphs:
         :return: The labels in alphabetical order with the associated matrix
         '''
         # Function to go from the user name (p#) to an interger for sorting purposes
-        def remove_p(element):
-            return int(element.strip('p'))
+        if adj_type == 'puzzle':
+            def remove_p(element):
+                return int(element.strip('p'))
+        else:
+            def remove_p(element):
+                return element
 
-        # Create an aplhabetically sorted list of the users
+        # Create an alphabetically sorted list of the users
         user_sort_index= sorted(labels, key=remove_p)
         # Check for all users what index they have in the new sorted list and make a list of those indexes
         sort_index= [index
@@ -289,6 +432,7 @@ class Graphs:
         # Multiplying the row-sortedmatrix with the elementmatrix to reorder the columns will give the sorted matrix
         new_matrix= np.matmul(matrix[sort_index], sort_matrix)
         return new_labels, new_matrix
+
 
     @staticmethod
     def compare(method, path1, path2):
