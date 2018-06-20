@@ -383,7 +383,11 @@ class Graphs:
                         'y': labels,
                         'type': 'heatmap',
                         'colorscale': colordict[colortype],
-                        'colorbar': {'showticklabels': False},
+                        'colorbar': {
+                            'showticklabels': False,
+                            'title': 'Low <--- (Similarity) ---> High',
+                            'titleside': 'right',
+                        },
                         'hoverinfo': 'text',
                         'text': text
                     }
@@ -495,6 +499,8 @@ class Graphs:
             area_2 = (xmax_2 - xmin_2) * (ymax_2 - ymin_2)
             # The total area of 2 rectangles is the area of 1 + (The area of the other - the overlapping part)
             totalarea = area_1 + area_2 - overlap_area
+            if totalarea == 0:
+                return 0
             return overlap_area / totalarea
         return 0
 
@@ -657,7 +663,8 @@ class Graphs:
                     colorscale= colordict[color],
                     colorbar= dict(
                         showticklabels= False,
-
+                        title= 'Low <--- (Density) ---> High',
+                        titleside= 'right',
                     ),
                     xbins= dict(
                         start= 0,
