@@ -57,37 +57,37 @@ class Data:
             # If a stimulus is misspelled, correct it
             text= data.loc[i,('StimuliName')]
             if '04_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='04_Köln_S2.jpg')
+                data.at[i, 'StimuliName']= '04_Köln_S2.jpg'
 
             elif '04b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='04b_Köln_S1.jpg')
+                data.at[i, 'StimuliName'] = '04b_Köln_S1.jpg'
 
             elif '12_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='12_Brüssel_S2.jpg')
+                data.at[i, 'StimuliName'] = '12_Brüssel_S2.jpg'
 
             elif '12b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='12b_Brüssel_S1.jpg')
+                data.at[i, 'StimuliName'] = '12b_Brüssel_S1.jpg'
 
             elif '14_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='14_Düsseldorf_S2.jpg')
+                data.at[i, 'StimuliName'] = '14_Düsseldorf_S2.jpg'
 
             elif '14b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='14b_Düsseldorf_S1.jpg')
+                data.at[i, 'StimuliName'] = '14b_Düsseldorf_S1.jpg'
 
             elif '15_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='15_Göteborg_S2.jpg')
+                data.at[i, 'StimuliName'] = '15_Göteborg_S2.jpg'
 
             elif '15b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='15b_Göteborg_S1.jpg')
+                data.at[i, 'StimuliName'] = '15b_Göteborg_S1.jpg'
 
             elif '24_' in text and '_S2.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='24_Zürich_S2.jpg')
+                data.at[i, 'StimuliName'] = '24_Zürich_S2.jpg'
 
             elif '24_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='24_Zürich_S1.jpg')
+                data.at[i, 'StimuliName'] = '24_Zürich_S1.jpg'
 
             elif '24b_' in text and '_S1.jpg' in text:
-                data.set_value(index=i, col='StimuliName', value='24b_Zürich_S1.jpg')
+                data.at[i, 'StimuliName'] = '24b_Zürich_S1.jpg'
 
             # Gets the mapresolution of the current fixation in the loop
             currentRes = resolutions.get_values()[int(data['StimuliName'][i][:2]) - 1]
@@ -152,9 +152,71 @@ class Data:
          The 'value' has the raw names, with id and .jpg
 
         :author: Yuri Maas
-        :return: {'puzzlename_#puzzle', '#map_puzzlename_#puzzle.jpg'}
+        :return: {'puzzlename_#puzzle': '#map_puzzlename_#puzzle.jpg'}
         """
         return [{'label': i[3:-4], 'value': i} for i in self.__data['StimuliName'].unique()]
+
+    def get_allUserNames_fromPuzzle(self, puzzle):
+        '''
+        Returns a dictionary of all the users from a certain puzzle
+
+        :author: Yuri Maas
+        :param puzzle: The puzzle to get all the users from
+        :return: {'label': user, 'value': user}
+        '''
+        # Get the data from the puzzle
+        data = self.get_puzzle_data(puzzle)
+        # Create an array of all users
+        users = [data[i]['user'].unique()[0] for i in range(len(data))]
+        return [{'label': i, 'value': i} for i in users]
+
+    def get_subscanpaths(self, stimuliname, unique_user):
+        """
+        gets all the subscanpaths of a certain stimuli of a certain user
+        :author Maaike van Delft & Annelies van de Wetering & Yuri Maas
+        :param stimuliname = the full stimliname (string) including the 2 digits at the beginning and .jpeg at the end
+        :param unique_user = a string: p1, p2 ,......... p9.
+        :returns returns 2 arrays, one with the x cooridnates and 1 with the y coordinates
+        """
+        # Load in all data from puzzle
+        puzzle_data = self.get_puzzle_data(stimuliname)
+        # Filter all the loaded data to only 1 (input) user
+        user_data = [puzzle_data[i]
+                     for i in range(len(puzzle_data))
+                     if puzzle_data[i]['user'].unique() == unique_user][0]
+
+
+        subscanpaths= []
+        for i in range(len(user_data)):
+            length = i + 1
+            while length <= len(user_data):
+                subscan= user_data.iloc[i:length]
+                subscanpaths.append(subscan)
+                length += 1
+        return subscanpaths
+
+    def get_specific_subscanpath(self, stimuliname, unique_user, length_scanpath):
+        """
+        gets a scanpath of a certain stimuli of a certain person with a certain length
+        :author Maaike van Delft & Annelies van de Wetering
+        :param stimuliname = the full stimliname (string) including the 2 digits at the beginning and .jpeg at the end
+        :param unique_user = a string: p1, p2 ,......... p9.
+        :param length_scanpath a integer, which length scanpath you want to retrieve
+        :returns returns 2 arrays, one with the x cooridnates and 1 with the y coordinates
+        """
+        x1, y1 = self.get_subscanpaths(stimuliname, unique_user)
+        x2 = []
+        y2 = []
+
+        for i in x1:
+            if len(i) == length_scanpath:
+                x2.append(i)
+
+        for j in y1:
+            if len(j) == length_scanpath:
+                y2.append(j)
+
+        return x2, y2
 
 
 class Current_Graphs:

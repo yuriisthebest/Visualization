@@ -135,7 +135,8 @@ class Layout:
             dcc.Dropdown(
                 id='Input-add_options-puzzle_dropdown',
                 value= initial_map,
-                options=dataset.get_puzzlenames()
+                placeholder= 'Select a puzzle',
+                options=dataset.get_puzzlenames(),
             ),
             html.Img(
                 id='puzzle-image',
@@ -143,6 +144,132 @@ class Layout:
                     'width': '100%'
                 }
             ),
+        ]
+
+    @staticmethod
+    def puzzle_options(dataset):
+        return [
+            html.Div(
+                id= 'Input-select-puzzle',
+                children= Layout.select_puzzle(dataset)
+            )
+        ]
+
+    @staticmethod
+    def visual_attention_options(dataset):
+        return [
+            # Choose puzzle, Choose map overlay
+            html.Label('Visual Attention Options'),
+            dcc.RadioItems(
+                id='Input-add_options-metro_map',
+                options=[
+                    {'label': 'Gaze plot', 'value': 'gaze'},
+                    {'label': 'Heatmap', 'value': 'attention'}
+                ],
+                labelStyle={'display': 'inline-block',
+                            'marginRight': 80}
+            ),
+            # Dropdown menu for choosing the colors for the heatmap
+            html.Label('Heatmap Color'),
+            dcc.Dropdown(
+                id='Input-add_options-gaze_color',
+                options=[
+                    {'label': 'Default', 'value': 'def'},
+                    {'label': 'Hot', 'value': 'hot'},
+                    {'label': 'Green', 'value': 'green'},
+                    {'label': 'Blue', 'value': 'blueish'},
+                    {'label': 'Viridis', 'value': 'vir'},
+                    {'label': 'Electric', 'value': 'elec'},
+                    {'label': 'Rainbow', 'value': 'rainbow', 'disabled': 'True'},
+                ],
+                searchable=False,
+                clearable=False,
+                placeholder='Select color',
+                value='blueish',
+            ),
+            # Slider for choosing the amount of bins for the heatmap
+            html.Label('Heatmap Bin-amount'),
+            dcc.Slider(
+                id='Input-add_options-heatbin',
+                included=False,
+                min=5,
+                max=50,
+                value=20,
+                marks={i: '{}'.format(i) for i in range(5, 51) if (i + 10) % 15 == 0},
+            ),
+
+            # Section with the dropdown menu for choosing a puzzle to visualize (including picture underneath)
+            html.Hr(style={'marginTop': 20}),
+            html.Div(
+                id='Input-select_puzzle',
+                children=Layout.select_puzzle(dataset)
+            )
+        ]
+
+    @staticmethod
+    def adjacency_options(dataset):
+        return [
+            html.Label('Select Puzzle or User'),
+            dcc.RadioItems(
+                id= 'Input-add_options-adjacency-type',
+                options= [{'label': 'Puzzle', 'value': 'puzzle'},
+                          {'label': 'User', 'value': 'user'}
+                ]
+            ),
+
+            html.Hr(),
+            # What comparison method
+            html.Label('Comparison method'),
+            dcc.RadioItems(
+                id='Input-add_options-adjacency',
+                options=[
+                    {'label': 'Bounding box', 'value': 'Bounding Box'},
+                    {'label': 'Euclidean distance', 'value': 'the Euclidean Distance'},
+                ],
+                labelStyle={'display': 'inline-block',
+                            'marginRight': 80}
+            ),
+
+            # What colorscale the adjacency matrix should use
+            html.Label('Color'),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_color',
+                options=[
+                    {'label': 'Default', 'value': 'def'},
+                    {'label': 'Hot', 'value': 'hot'},
+                    {'label': 'Green', 'value': 'green'},
+                    {'label': 'Viridis', 'value': 'vir'},
+                    {'label': 'Electric', 'value': 'elec', 'disabled': 'True'},
+                    {'label': 'Rainbow', 'value': 'rainbow'},
+                ],
+                searchable= False,
+                clearable= False,
+                placeholder= 'Select color',
+                value= 'def',
+            ),
+
+            # What ordering method to use
+            html.Label('Ordering'),
+            dcc.Dropdown(
+                id='Input-add_options-adjacency_order',
+                options=[
+                    {'label': 'No ordering', 'value': 'no'},
+                    {'label': 'Alphabetical ordering', 'value': 'alphabet'},
+                ],
+                searchable= False,
+                clearable= False,
+                value= 'no',
+            ),
+
+            # The puzzle selection (and user if choosen)
+            html.Hr(),
+            html.Div(
+                id= 'Input-select_user',
+            ),
+            html.Div(
+                id= 'Input-select_puzzle',
+                children= Layout.select_puzzle(dataset)
+            )
         ]
 
 
@@ -172,27 +299,33 @@ class Graphs:
 
     ############### Start Adjacency Matrix ######################################################
     @staticmethod
-    def basic_adjacency(dataset, new_mapname, compare_method, colortype, ordering):
+    def basic_adjacency(dataset, new_mapname, adj_type, compare_method, colortype, ordering, input_user):
         '''
         Creates an adjacency matrix graph for the Plots panel
 
         :author: Yuri Maas
         :param dataset: The data to use to create the adjacency matrix
         :param new_mapname: The puzzle to use
+        :param adj_type: The type of adjacency matrix (Puzzle or User)
         :param compare_method: Which method to use to grade 2 paths on
         :param colortype: The color the heatmap should be
         :param ordering: The reorder algorithm that should be used
         :return: Heatmap object which shows the adjacency matrix for all paths of a certain puzzle
         '''
         # Get the fixation data for the puzzle
-        all_paths = dataset.get_puzzle_data(new_mapname)
-        all_users = [all_paths[i]['user'].unique()[0] for i in range(len(all_paths))]
-        # Set-up a matrix with only zeros to fill in
-        matrix = np.zeros((len(all_users), len(all_users)))
+        if adj_type == 'puzzle':
+            all_paths = dataset.get_puzzle_data(new_mapname)
+            labels = [all_paths[i]['user'].unique()[0] for i in range(len(all_paths))]
+        elif adj_type == 'user':
+            all_paths = dataset.get_subscanpaths(new_mapname, input_user)
+            labels = ['Length: {} from {}'.format(len(scan), scan.index[0]) for scan in all_paths]
 
-        for i in range(len(all_users)):
+        # Set-up a matrix with only zeros to fill in
+        matrix = np.zeros((len(labels), len(labels)))
+
+        for i in range(len(labels)):
             path1 = all_paths[i]
-            for j in range(i, len(all_users)):
+            for j in range(i, len(labels)):
                 path2 = all_paths[j]
                 similarity = np.round(Graphs.compare(compare_method, path1, path2), 4)
                 matrix[i, j] = similarity
@@ -200,19 +333,26 @@ class Graphs:
 
         # Order the matrix
         if ordering == 'alphabet':
-            all_users, matrix = Graphs.reorder_alphabet(all_users, matrix)
+            labels, matrix = Graphs.reorder_alphabet(labels, matrix, adj_type)
 
         # Determine the hovertext and colorscale
         text= []
         for x in range(len(all_paths)):
             midterm= []
             for y in range(len(all_paths)):
-                midterm.append('Similarity of user {} and {} = {}'.format(
-                    all_users[x],
-                    all_users[y],
-                    matrix[x, y],
-                ))
-            text.append(midterm)
+                if adj_type == 'puzzle':
+                    midterm.append('Similarity of user {} and {} = {}'.format(
+                        labels[x],
+                        labels[y],
+                        matrix[x, y],
+                    ))
+                elif adj_type == 'user':
+                    midterm.append('Similarity of scanpath with {} and scanpath with {} = {}'.format(
+                        labels[x],
+                        labels[y],
+                        matrix[x, y],
+                    ))
+                text.append(midterm)
 
         colordict = {
             'def': 'RdBu',
@@ -239,11 +379,15 @@ class Graphs:
                 'data': [
                     {
                         'z': matrix,
-                        'x': all_users,
-                        'y': all_users,
+                        'x': labels,
+                        'y': labels,
                         'type': 'heatmap',
                         'colorscale': colordict[colortype],
-                        'colorbar': {'showticklabels': False},
+                        'colorbar': {
+                            'showticklabels': False,
+                            'title': 'Low <--- (Similarity) ---> High',
+                            'titleside': 'right',
+                        },
                         'hoverinfo': 'text',
                         'text': text
                     }
@@ -256,7 +400,7 @@ class Graphs:
         )
 
     @staticmethod
-    def reorder_alphabet(labels, matrix):
+    def reorder_alphabet(labels, matrix, adj_type):
         '''
         Reorders the rows and columns of the adjacency matrix so that the labels are in alphabetical order
 
@@ -266,10 +410,14 @@ class Graphs:
         :return: The labels in alphabetical order with the associated matrix
         '''
         # Function to go from the user name (p#) to an interger for sorting purposes
-        def remove_p(element):
-            return int(element.strip('p'))
+        if adj_type == 'puzzle':
+            def remove_p(element):
+                return int(element.strip('p'))
+        else:
+            def remove_p(element):
+                return element
 
-        # Create an aplhabetically sorted list of the users
+        # Create an alphabetically sorted list of the users
         user_sort_index= sorted(labels, key=remove_p)
         # Check for all users what index they have in the new sorted list and make a list of those indexes
         sort_index= [index
@@ -288,6 +436,7 @@ class Graphs:
         # Multiplying the row-sortedmatrix with the elementmatrix to reorder the columns will give the sorted matrix
         new_matrix= np.matmul(matrix[sort_index], sort_matrix)
         return new_labels, new_matrix
+
 
     @staticmethod
     def compare(method, path1, path2):
@@ -350,6 +499,8 @@ class Graphs:
             area_2 = (xmax_2 - xmin_2) * (ymax_2 - ymin_2)
             # The total area of 2 rectangles is the area of 1 + (The area of the other - the overlapping part)
             totalarea = area_1 + area_2 - overlap_area
+            if totalarea == 0:
+                return 0
             return overlap_area / totalarea
         return 0
 
@@ -383,11 +534,11 @@ class Graphs:
 
         return 1 - Euc_dist_tot_norm
 ############## End of Adjacency Matrix ############################################################
-
+############## Start of Visual Attention Map ######################################################
     @staticmethod
-    def get_visual_attention_map(dataset, new_mapname, visual_method, color):
+    def get_visual_attention_map(dataset, new_mapname, visual_method, color, bin_size):
         if visual_method == 'attention':
-            return Graphs.visual_heatmap(dataset, new_mapname)
+            return Graphs.visual_heatmap(dataset, new_mapname, color, bin_size)
         elif visual_method == 'gaze':
             return Graphs.visual_gaze_plot(dataset, new_mapname)
         else:
@@ -425,7 +576,7 @@ class Graphs:
                     'toggleSpikelines'
                 ],
             },
-            figure={
+            figure= {
                 'data': [go.Scatter(x= x_coords[i],
                                     # The plot has to be horizontally flipped since the y-axis goes from down to up
                                     y= dataset.get_resolution_Y(new_mapname) - y_coords[i],
@@ -473,84 +624,93 @@ class Graphs:
         )
 
     @staticmethod
-    def visual_heatmap(dataset, new_mapname):
+    def visual_heatmap(dataset, new_mapname, color, bin_size):
+        '''
+        Creates a heatmap showing where everyone looked a lot on the map
+
+        :author: Yuri Maas
+        :param dataset: The Class object to take the data from
+        :param new_mapname: The name of the puzzle that the graph should be based upon
+        :param color: Optional color for the heatmap
+        :return: Graph object to be visualized by Dash
+        '''
+        # Load data
         imageroute = '/MetroMapsEyeTracking/stimuli/'
-        data = dataset.get_puzzle_data(new_mapname)
-        values = []
-        return go.Figure(
-            data= [
-                dict(
-                    z = values,
-                    type= 'heatmap',
-                    colorscale = ['Viridis'],
-                )
-            ],
-            layout= dict(
-                images=[
-                    dict(
-                        source=imageroute + new_mapname,
-                        xref='x',
-                        yref='y',
-                        x=0,
-                        y=0,
-                        sizex=dataset.get_resolution_X(new_mapname),
-                        sizey=dataset.get_resolution_Y(new_mapname),
-                        xanchor='left',
-                        yanchor='bottom',
-                        opacity=0.8,
-                        layer='below',
-                        sizing='stretch',
+        data_puzzle = dataset.get_puzzle_data(new_mapname)
+        # Transform the data into X and Y point separately so they can be used
+        x_coords= [data_puzzle[i]['MappedFixationPointX'] for i in range(len(data_puzzle))]
+        x_coords= np.concatenate([array for array in x_coords], axis= 0)
+        y_coords= [data_puzzle[i]['MappedFixationPointY'] for i in range(len(data_puzzle))]
+        y_coords= np.concatenate([array for array in y_coords], axis= 0)
+        # Determine the color
+        colordict = {
+            'def': 'RdBu',
+            'hot': 'Hot',
+            'green': 'Greens',
+            'vir': 'Viridis',
+            'elec': 'Electric',
+            'rainbow': 'Rainbow',
+            'blueish': 'YIGnBu',
+        }
+        return dcc.Graph(
+            id= 'Visual Heatmap',
+            figure= {
+                'data': [go.Histogram2d(
+                    x= x_coords,
+                    y= dataset.get_resolution_Y(new_mapname) - y_coords,
+                    customdata= new_mapname,
+                    zsmooth= 'fast',
+                    colorscale= colordict[color],
+                    colorbar= dict(
+                        showticklabels= False,
+                        title= 'Low <--- (Density) ---> High',
+                        titleside= 'right',
+                    ),
+                    xbins= dict(
+                        start= 0,
+                        end= dataset.get_resolution_X(new_mapname),
+                        size= dataset.get_resolution_X(new_mapname)/ bin_size,
+                    ),
+                    ybins= dict(
+                        start= 0,
+                        end= dataset.get_resolution_Y(new_mapname),
+                        size= dataset.get_resolution_Y(new_mapname)/ bin_size,
+                    ),
+                    zmax=200,
+                    opacity=0.6,
                     )
                 ],
-                title='Heatmap of puzzle: {}'.format(new_mapname[3:-4]),
-                hovermode='closest',
-                xaxis=dict(
-                    range=[0, dataset.get_resolution_X(new_mapname)],
-                    showline=False,
-                    showgrid=False,
-                    showticklabels=False,
+                'layout': go.Layout(
+                    images=[
+                        dict(
+                            source=imageroute + new_mapname,
+                            xref='x',
+                            yref='y',
+                            x=0,
+                            y=0,
+                            sizex=dataset.get_resolution_X(new_mapname),
+                            sizey=dataset.get_resolution_Y(new_mapname),
+                            xanchor='left',
+                            yanchor='bottom',
+                            opacity=0.9,
+                            layer='below',
+                            sizing='stretch',
+                        )
+                    ],
+                    title='Heatmap of puzzle: {}'.format(new_mapname[3:-4]),
+                    hovermode='closest',
+                    xaxis=dict(
+                        range=[0, dataset.get_resolution_X(new_mapname)],
+                        showline= False,
+                        showgrid= False,
+                        showticklabels= True,
+                    ),
+                    yaxis=dict(
+                        range=[0, dataset.get_resolution_Y(new_mapname)],
+                        showline= False,
+                        showgrid= False,
+                        showticklabels= True,
+                    ),
                 ),
-                yaxis=dict(
-                    range=[0, dataset.get_resolution_Y(new_mapname)],
-                    showline=False,
-                    showgrid=False,
-                    showticklabels=False,
-                ),
-            )
+            }
         )
-
-    @staticmethod
-    def visual_heatmap2(dataset, stimuli):
-        """
-        gets the image of a certain stimuli
-        :author Maaike van Delft
-        :param the stimuli where we want the image from
-
-        """
-
-        df = dataset.get_puzzle_data(stimuli)
-
-        #Get x and y cooridnates
-        dfx = df['MappedFixationPointX']
-        dfy = df['MappedFixationPointY']
-        x = np.array(dfx, dtype=float)
-        y = np.array(dfy, dtype=float)
-
-
-        script_dir = sys.path[0]
-        image_path = os.path.join(script_dir, '/MetroMapsEyeTracking/stimuli/' + stimuli)
-        img = Image.open(image_path)
-        plt.imshow(img)
-
-        implot = plt.imshow(img)
-        heatmap_z, xedges, yedges = np.histogram2d(x, y, bins=30)
-        extent_2 = [xedges[0], xedges[-1], yedges[0], yedges[-1]]
-
-        plt.plot()
-        plt.imshow(heatmap_z.T, extent=extent_2, origin='lower', camp='inferno', alpha=0.5)
-        plt.colorbar()
-
-        figfile = BytesIO()
-        plt.savefig(figfile, format='png')
-        figfile.seek(0)
-        return base64.b64encode(figfile.getvalue())

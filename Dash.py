@@ -38,7 +38,7 @@ app.layout = html.Div([
         id= 'hidden',
         style= {'display': 'none'},
         children= [
-            # These are hidden, necessary for error prevention
+            # These are hidden, necessary for error prevention, just ignore these
             dcc.RadioItems(
                 id= 'Input-add_options-adjacency',
             ),
@@ -53,6 +53,15 @@ app.layout = html.Div([
             ),
             dcc.Dropdown(
                 id='Input-add_options-gaze_color'
+            ),
+            dcc.Slider(
+                id='Input-add_options-heatbin'
+            ),
+            dcc.RadioItems(
+                id='Input-add_options-adjacency-type',
+            ),
+            dcc.Dropdown(
+                id='Input-select_user-dropdown',
             ),
         ]
     ),
@@ -135,7 +144,6 @@ app.layout = html.Div([
                         ],
                         searchable= False,
                         placeholder= 'Select an amount of panels',
-                        #value= 4
                     ),
 
                     dcc.RadioItems(
@@ -153,9 +161,11 @@ app.layout = html.Div([
                 ]
             ),
 
+            # Division for the radioitems to choose the visualization type
             html.Div(
                 id= 'Input-vis_types',
                 children=[
+                    html.Label('Visualization Type'),
                     dcc.RadioItems(
                         id= 'Input-vis_types-types',
                         options=[
@@ -170,6 +180,7 @@ app.layout = html.Div([
                 ]
             ),
 
+            # Division for additional options (default map options) based on the choosen visualization type
             html.Div(
                 id= 'Input-add_options',
                 children= [
@@ -181,13 +192,10 @@ app.layout = html.Div([
                     ),
                 ]
             ),
-            html.Div(
-                id= 'Input-puzzle (WIP',
-            )
         ]
     ),
 
-
+    # Upper division for the visualization, this division determines the borders where the graphs have to fit in
     html.Div(
         id='VisualizationHead',
         style={
@@ -196,6 +204,7 @@ app.layout = html.Div([
             'marginLeft': 5,
             'marginRight': 5,
         },
+        # Inner division for the visualization, all the graphs will be put in this division
         children= html.Div(
             id='Visualization',
             style= {'display': 'inline-block'},
@@ -203,7 +212,7 @@ app.layout = html.Div([
         ),
     ),
 
-
+    # Division for the information output
     html.Div(
         id='Output',
         style={
@@ -235,15 +244,19 @@ app.layout = html.Div([
      State('Input-add_options-adjacency', 'value'),
      State('Input-add_options-adjacency_color', 'value'),
      State('Input-add_options-adjacency_order', 'value'),
+     State('Input-add_options-adjacency-type', 'value'),
+     State('Input-select_user-dropdown', 'value'),
      State('Input-add_options-metro_map', 'value'),
      State('Input-add_options-gaze_color', 'value'),
+     State('Input-add_options-heatbin', 'value'),
      ]
 )
-def update_storage(n_clicks, input_puzzle,          # What puzzle to use
-                   amount_panels, selected_panel,   # Panel selections
-                   vis_type,                        # Type of visualization (Puzzle, Adjacency matrix, Mapping)
-                   compare_method, color_adj, ordering, # For adjacency matrices
-                   visual_method, color_vis_att,     # For Metro Maps
+def update_storage(n_clicks, input_puzzle,                  # What puzzle to use
+                   amount_panels, selected_panel,           # Panel selections
+                   vis_type,                                # Type of visualization (Puzzle, Adjacency matrix, Mapping)
+                   compare_method, color_adj, ordering,     # For adjacency matrices
+                   adj_type, input_user,                    # For adjacency matrices
+                   visual_method, color_vis_att, bin_size   # For Metro Maps
                    ):
     '''
     Updates the visualization based on the input parameters
@@ -255,8 +268,13 @@ def update_storage(n_clicks, input_puzzle,          # What puzzle to use
     :param selected_panel: Which panel to modify
     :param vis_type: The type of visualization to put ni the selected panel
     :param compare_method: In case of adjacency matrix, the comparison method to use
-    :param color: In case of adjacency matrix, the color to use
+    :param color_adj: In case of adjacency matrix, the color to use
     :param ordering: In case of adjacency matrix, the sorting algorithm use to order the matrix
+    :param adj_type: In case of adjacency matrix, the type (puzzle or user) of adjacency matrix
+    :param input_user: In case of adjacency matrix and user type, The user to visualize
+    :param visual_method: In case of visual attention, the type of visual attention map (Gaze, Heatmap)
+    :param color_vis_att: In case of visual attention and heatmap, the color for the heatmap
+    :param bin_size: In case of visual attention and heatmap, the color for the heatmap
     :return: A layout for the visualization with a certain amount of determined plots
     '''
     if selected_panel is not None and input_puzzle is not None:
@@ -267,9 +285,11 @@ def update_storage(n_clicks, input_puzzle,          # What puzzle to use
         if vis_type == 'puzzle':
             graph = Graphs.puzzle_image(input_puzzle)
         elif vis_type == 'mm':
-            graph = Graphs.get_visual_attention_map(dataset, input_puzzle, visual_method, color_vis_att)
+            graph = Graphs.get_visual_attention_map(dataset, input_puzzle, visual_method, color_vis_att, bin_size)
         elif vis_type == 'adj':
-            graph = Graphs.basic_adjacency(dataset, input_puzzle, compare_method, color_adj, ordering)
+            graph = Graphs.basic_adjacency(dataset, input_puzzle, adj_type,
+                                           compare_method, color_adj, ordering,
+                                           input_user)
 
         plots.set_graph(selected_panel,
                         graph)
@@ -328,109 +348,36 @@ def update_visualization_options(input_type):
     # mm = Metro Map
     # puzzle = Puzzle
     if input_type == 'adj':
-        return [
-            # What comparison method
-            html.Label('Comparison method'),
-            dcc.RadioItems(
-                id='Input-add_options-adjacency',
-                options=[
-                    {'label': 'Test comparison', 'value': 'Randomness'},
-                    {'label': 'Bounding box', 'value': 'Bounding Box'},
-                    {'label': 'Euclidean distance', 'value': 'the Euclidean Distance'},
-                ],
-                labelStyle={'display': 'inline-block',
-                            'marginRight': 80}
-            ),
-
-            # What colorscale the adjacency matrix should use
-            html.Label('Color'),
-            dcc.Dropdown(
-                id='Input-add_options-adjacency_color',
-                options=[
-                    {'label': 'Default', 'value': 'def'},
-                    {'label': 'Hot', 'value': 'hot'},
-                    {'label': 'Green', 'value': 'green'},
-                    {'label': 'Viridis', 'value': 'vir'},
-                    {'label': 'Electric', 'value': 'elec', 'disabled': 'True'},
-                    {'label': 'Rainbow', 'value': 'rainbow'},
-                ],
-                searchable= False,
-                clearable= False,
-                placeholder= 'Select color',
-                value= 'def',
-            ),
-
-            # What ordering method to use
-            html.Label('Ordering'),
-            dcc.Dropdown(
-                id='Input-add_options-adjacency_order',
-                options=[
-                    {'label': 'No ordering', 'value': 'no'},
-                    {'label': 'Alphabetical ordering', 'value': 'alphabet'},
-                ],
-                searchable= False,
-                clearable= False,
-                value= 'no',
-            ),
-
-            # The puzzle selection
-            html.Hr(),
-            html.Div(
-                id= 'Input-select_puzzle',
-                children= Layout.select_puzzle(dataset)
-            )
-        ]
+        return Layout.adjacency_options(dataset)
 
     if input_type == 'mm':
-        return [
-            # Choose puzzle, Choose map overlay
-            html.Label('Visual Attention Options'),
-            dcc.RadioItems(
-                id='Input-add_options-metro_map',
-                options=[
-                    {'label': 'Gaze plot', 'value': 'gaze'},
-                    {'label': 'Heatmap', 'value': 'attention'}
-                ],
-                labelStyle= {'display': 'inline-block',
-                             'marginRight': 80}
-            ),
-            # red, deepskyblue, lawngreen, blue, darkviolet, fuchsia, maroon,
-            # darkorange, darkgreen, saddlebrown, mediumspringgreen, slategrey
-            html.Label('Color'),
-            dcc.Dropdown(
-                id='Input-add_options-gaze_color',
-                options=[
-                    {'label': 'Red', 'value': 'red'},
-                    {'label': 'Blue', 'value': 'blue'},
-                    {'label': 'Sky Blue', 'value': 'deepskyblue'},
-                    {'label': 'Dark Sky', 'value': 'darkviolet'},
-                    {'label': 'Green', 'value': 'darkgreen'},
-                    {'label': 'Light Green', 'value': 'lawngreen'},
-                    {'label': 'Even lighter Green', 'value': 'mediumspringgreen'},
-                    {'label': 'Fuchsia', 'value': 'fuchsia'},
-                    {'label': 'Maroon', 'value': 'maroon'},
-                    {'label': 'Orange', 'value': 'darkorange'},
-                    {'label': 'Horse Brown', 'value': 'saddlebrown'},
-                    {'label': 'Gray with an A or Grey with an E?', 'value': 'slategrey'},
-                ],
-                searchable=False,
-                clearable=False,
-                placeholder='Select color',
-                value='red',
-            ),
-            html.Hr(),
-            html.Div(
-                id= 'Input-select_puzzle',
-                children= Layout.select_puzzle(dataset)
-            )
-        ]
+        return Layout.visual_attention_options(dataset)
 
     if input_type == 'puzzle':
+        return Layout.puzzle_options(dataset)
+
+@app.callback(
+    Output('Input-select_user', 'children'),
+    [Input('Input-add_options-adjacency-type', 'value'),
+     Input('Input-add_options-puzzle_dropdown', 'value')]
+)
+def update_input_user(adjacency_type, input_puzzle):
+    '''
+    Callback that shows the available users to choose from if the user wants an adjacency matrix with only 1 user
+
+    :author: Yuri Maas
+    :return:
+    '''
+    if adjacency_type != 'user':
+        return None
+    else:
         return [
-            html.Div(
-                id= 'Input-select-puzzle',
-                children= Layout.select_puzzle(dataset)
-            )
+            html.Label('User:'),
+            dcc.Dropdown(
+                id= 'Input-select_user-dropdown',
+                options= dataset.get_allUserNames_fromPuzzle(input_puzzle),
+                placeholder= 'Select user',
+            ),
         ]
 
 # Callback that changes the puzzle shown when selecting a panel
@@ -452,6 +399,14 @@ def update_map_image(input_puzzle):
      Input('adjacency-matrix', 'hoverData')]
 )
 def display_click_data(clickdata, hoverData):
+    '''
+    Updates information screen based on user actions
+
+    :author: Yuri Maas
+    :param clickdata: The data of the point a user has clicked on
+    :param hoverData: The data of the point a user is hovering (has hovered) over
+    :return: Markdown object with text to show the user vital information
+    '''
     if hoverData is not None:
         hover = dcc.Markdown('''
 #### Hover:
