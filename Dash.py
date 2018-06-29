@@ -21,6 +21,7 @@ defaultmap = '03_Bordeaux_S1.jpg'
 app = dash.Dash()
 app.config['suppress_callback_exceptions'] = True
 
+# Layout created by Yuri Maas
 app.layout = html.Div([
     # Global Structure ->   Input,
     #                           - Open & Save
@@ -30,13 +31,14 @@ app.layout = html.Div([
     #                       Visualization,
     #                           Plots
     #                       Output
+    #                           - Information
 
     # Store data
     html.Div(
         id= 'hidden',
         style= {'display': 'none'},
         children= [
-            # These are hidden, necessary for error prevention, just ignore these
+            # These are hidden and necessary for error prevention, just ignore these. They don't DO anything
             dcc.RadioItems(
                 id= 'Input-add_options-adjacency',
             ),
@@ -65,14 +67,16 @@ app.layout = html.Div([
     ),
 
     html.Div(
+        # Division for the all the input parameters (dropdowns, radioitems, sliders, etc)
         id='Input-column',
         style={
-            'width': '15%',
+            'width': '15%', # Amount of horizontal space the input section takes
             'display': 'inline-grid',
             'marginLeft' : 5,
             'marginRight': 5
         },
         children=[
+            # Where all the input parameters go
             html.H1('Input'),
 
             html.Div(
@@ -92,7 +96,7 @@ app.layout = html.Div([
                         )
                     ),
 
-                    # What are we saving here?????
+                    # What are we saving here????? (Note: It doesn't do anything, not implemented)
                     dcc.Upload(
                         id='Input-head-save',
                         multiple= False,
@@ -134,6 +138,7 @@ app.layout = html.Div([
             html.Div(
                 id= 'Input-panels',
                 children=[
+                    # Amount of panels selection
                     dcc.Dropdown(
                         id= 'Input-panels-dropdown',
                         options= [
@@ -144,6 +149,7 @@ app.layout = html.Div([
                         placeholder= 'Select an amount of panels',
                     ),
 
+                    # Panel selection
                     dcc.RadioItems(
                         id= 'Input-panels-panels',
                         options=[
@@ -159,7 +165,7 @@ app.layout = html.Div([
                 ]
             ),
 
-            # Division for the radioitems to choose the visualization type
+            # Division for the radioitems to choose the visualization type (puzzle, adjacency or visual attention map)
             html.Div(
                 id= 'Input-vis_types',
                 children=[
@@ -230,7 +236,17 @@ app.layout = html.Div([
 
 
 
-"""Callbacks"""
+"""
+Callbacks
+
+The callbacks is what makes the visualization tool dynamic instead of static.
+Without these, the website would be an unchangeable picture.
+With these, we can add additional options once choosing certain options, 
+and create (real-time) graphs from those options + much more.
+
+Every callback can only have 1 output and 
+every 'id' (object from the layout above) can only be the output once.
+"""
 # Callback to update the visualization
 @app.callback(
     Output('Visualization', 'children'),
@@ -312,7 +328,7 @@ def update_storage(n_clicks, input_puzzle,                  # What puzzle to use
 
 
 
-# Callback to change the amount of panels based on the panel dropdown
+# Callback to change the amount of panels to be able to be selected based on the amount of panels dropdown selection
 @app.callback(
     Output('Input-panels-panels', 'options'),
     [Input('Input-panels-dropdown', 'value')]
@@ -328,6 +344,7 @@ def update_panels(input_value):
     if input_value == None:
         return []
     return [{'label': 'Panel {}'.format(i+1), 'value': i} for i in range(input_value)]
+
 
 # Add additional options once a visualization type has been chosen
 @app.callback(
@@ -354,6 +371,7 @@ def update_visualization_options(input_type):
     if input_type == 'puzzle':
         return Layout.puzzle_options(dataset)
 
+
 @app.callback(
     Output('Input-select_user', 'children'),
     [Input('Input-add_options-adjacency-type', 'value'),
@@ -361,10 +379,13 @@ def update_visualization_options(input_type):
 )
 def update_input_user(adjacency_type, input_puzzle):
     '''
-    Callback that shows the available users to choose from if the user wants an adjacency matrix with only 1 user
+    Callback that shows the available users to choose from
+    but only if the user(client) wants an adjacency matrix with only 1 user (subscanpath adjacency matrix)
 
     :author: Yuri Maas
-    :return:
+    :return: Dropdown with all the possible users for a cretain puzzle
+                if client wants a subscanpath adjacency matrix,
+            None otherwise
     '''
     if adjacency_type != 'user':
         return None
@@ -384,6 +405,14 @@ def update_input_user(adjacency_type, input_puzzle):
     [Input('Input-add_options-puzzle_dropdown', 'value')]
 )
 def update_map_image(input_puzzle):
+    '''
+    Shows a picture of the selected puzzle underneath the puzzle selection
+
+    :author: Yuri Maas
+    :param input_puzzle: The selected puzzle, of which we want to show a picture underneath
+    :return: The src value corresponding to the file location of the picture to show,
+             None, if no puzzle is selected.
+    '''
     if input_puzzle is None:
         return None
     return imageroute + input_puzzle
@@ -432,13 +461,17 @@ Similarity = {}
         ))
     else:
         click = None
-
+    # Returns the created information with hover on top and click on the bottom, other way around might be better.
     return [hover, click]
 
 
 
 
-# Server and Image things
+# Image and Server things
+# I don't understand it either, but apparently it makes sure that the metro pictures are visualized in the tool
+# The last 3 lines of code is what run all the code. Allowing it to be used.
+# The host= '0.0.0.0' is used for the tool to be run on the local network.
+# With IP:8050 other people can access the tool if they are on the same network.
 @app.server.route('{}<image_path>.jpg'.format(imageroute))
 def serve_image(image_path):
     image_name = '{}.jpg'.format(image_path)

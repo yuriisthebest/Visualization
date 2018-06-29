@@ -188,11 +188,14 @@ class Data:
 
 class Current_Graphs:
     '''
-    A class to store all the current graphs
+    A class to store all the current graphs,
+    Major suspect in the ongoing investigating to why the tool sometimes
+        gets stuck in a certain panel / doesn't want to update anymore (updating never stops calculating nor shows)
 
     :author: Yuri Maas
     '''
     def __init__(self):
+        # On tool start, there shouldn't be any graphs loaded in.
         self.__graphs = [None, None, None, None]
 
     def get_graph(self, graph_id):
