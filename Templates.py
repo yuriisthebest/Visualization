@@ -1,24 +1,17 @@
-import pandas as pd
 import numpy as np
 import random
 import dash
 import dash_core_components as dcc
 import dash_html_components as html
-from dash.dependencies import Input, Output, State
 import plotly.graph_objs as go
-import flask
-import os
-import matplotlib.pyplot as plt
-from PIL import Image
-import sys
-from io import BytesIO
-import base64
 
 from Storage import Data
+
 
 class Layout:
     '''
     Class to store layout options for the callbacks
+    Main storage items are the layout options for 0, 1 or 4 graph panels in the visualization.
 
     :author: Yuri Maas
     '''
@@ -26,9 +19,10 @@ class Layout:
     def no_graphs():
         '''
         Creates a layout for the 'Plots' section for a Dash Application without any graphs
+        This is also the default layout, showing this layout at startup.
 
         :author: Yuri Maas
-        :return: header
+        :return: Some text
         '''
         return [
             html.H1('Plots'),
@@ -55,6 +49,7 @@ class Layout:
                     'display': 'inline-block'
                 },
                 children = [
+                    # The graph to be shown
                     graph
                 ]
             ),
@@ -132,12 +127,14 @@ class Layout:
         '''
         return [
             html.Label('Puzzle:'),
+            # The dropdown menu with all the possible puzzles
             dcc.Dropdown(
                 id='Input-add_options-puzzle_dropdown',
                 value= initial_map,
                 placeholder= 'Select a puzzle',
                 options=dataset.get_puzzlenames(),
             ),
+            # The image of the selected puzzle (has to be put there by callback)
             html.Img(
                 id='puzzle-image',
                 style= {
@@ -148,6 +145,14 @@ class Layout:
 
     @staticmethod
     def puzzle_options(dataset):
+        '''
+        Calls the function above and uses it as children in a division,
+        seems very unnecessary, but I'm not gonna change it now.
+
+        :author: Yuri Maas
+        :param dataset: The dataset to use
+        :return: Division with the puzzle dropdown and Image
+        '''
         return [
             html.Div(
                 id= 'Input-select-puzzle',
@@ -157,6 +162,13 @@ class Layout:
 
     @staticmethod
     def visual_attention_options(dataset):
+        '''
+        If the user choose to create a visual attention map, add additional options for that graph
+
+        :author: Yuri Maas
+        :param dataset: The dataset to be used
+        :return: The additional options for visual attention maps
+        '''
         return [
             # Choose puzzle, Choose map overlay
             html.Label('Visual Attention Options'),
@@ -208,7 +220,15 @@ class Layout:
 
     @staticmethod
     def adjacency_options(dataset):
+        '''
+        If the user choose to create a adjacency matrix, add additional options for that matrix
+
+        :author: Yuri Maas
+        :param dataset: The dataset to be used
+        :return: The additional options for the adjacency matrix
+        '''
         return [
+            # RadioItems wether the user wants a matrix of a puzzle (users on axis) or a user (subscanpath matrix)
             html.Label('Select Puzzle or User'),
             dcc.RadioItems(
                 id= 'Input-add_options-adjacency-type',
@@ -335,7 +355,7 @@ class Graphs:
         if ordering == 'alphabet':
             labels, matrix = Graphs.reorder_alphabet(labels, matrix, adj_type)
 
-        # Determine the hovertext and colorscale
+        # Determine the hovertext
         text= []
         for x in range(len(all_paths)):
             midterm= []
@@ -354,6 +374,7 @@ class Graphs:
                     ))
                 text.append(midterm)
 
+        # Determine the color scale of the matrix (Using standard colors, because they are good enough)
         colordict = {
             'def': 'RdBu',
             'hot': 'Hot',
@@ -409,7 +430,7 @@ class Graphs:
         :param matrix: The matrix to reorder
         :return: The labels in alphabetical order with the associated matrix
         '''
-        # Function to go from the user name (p#) to an interger for sorting purposes
+        # Function to go from the user name (p#) to an integer for sorting purposes if axis has user names
         if adj_type == 'puzzle':
             def remove_p(element):
                 return int(element.strip('p'))
@@ -472,25 +493,29 @@ class Graphs:
         '''
         Calculates the bounding box overlap between two scanpaths
 
-        :author: Yuri Maas
+        :author: Yuri Maas & Maaike van Delft
         :param path1: The scanpath (in DataFrame) to compare to path2
         :param path2: The scanpath (in DataFrame) to compare to path1
         :return: A similarity value between 0 and 1
         '''
+        # Creates a box of path1
         xmax_1 = max(path1['MappedFixationPointX'])
         xmin_1 = min(path1['MappedFixationPointX'])
         ymax_1 = max(path1['MappedFixationPointY'])
         ymin_1 = min(path1['MappedFixationPointY'])
 
+        # Creates a box of path2
         xmax_2 = max(path2['MappedFixationPointX'])
         xmin_2 = min(path2['MappedFixationPointX'])
         ymax_2 = max(path2['MappedFixationPointY'])
         ymin_2 = min(path2['MappedFixationPointY'])
 
+        # Creates a box of the overlap of the boxes from path1 and 2
         xmax_box = min(xmax_1, xmax_2)
         xmin_box = max(xmin_1, xmin_2)
         ymax_box = min(ymax_1, ymax_2)
         ymin_box = max(ymin_1, ymin_2)
+        # Determines the dimensions and area of the overlap box
         dx = xmax_box - xmin_box
         dy = ymax_box - ymin_box
         if dx >= 0 and dy >= 0:
@@ -499,9 +524,11 @@ class Graphs:
             area_2 = (xmax_2 - xmin_2) * (ymax_2 - ymin_2)
             # The total area of 2 rectangles is the area of 1 + (The area of the other - the overlapping part)
             totalarea = area_1 + area_2 - overlap_area
+            # If the total area equals 0, than the area of both path1 and path2 are 0, and something is really wrong
             if totalarea == 0:
                 return 0
             return overlap_area / totalarea
+        # If dx or dy is negative (shouldn't happen) than something is wrong and we will just output 0.
         return 0
 
     @staticmethod

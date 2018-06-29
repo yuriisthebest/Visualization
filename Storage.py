@@ -1,5 +1,4 @@
 import pandas as pd
-import numpy as np
 
 class Data:
     """
@@ -104,15 +103,6 @@ class Data:
         return clean_data
     # End of initialization ################################################################
 
-    def get_data(self):
-        """
-        Return the dataset
-
-        :author: Yuri Maas
-        :return: The entire (processed) dataset
-        """
-        return self.__data
-
     def get_puzzle_data(self, puzzle_name):
         '''
         Returns all the fixations of a single puzzle
@@ -195,37 +185,17 @@ class Data:
                 length += 1
         return subscanpaths
 
-    def get_specific_subscanpath(self, stimuliname, unique_user, length_scanpath):
-        """
-        gets a scanpath of a certain stimuli of a certain person with a certain length
-        :author Maaike van Delft & Annelies van de Wetering
-        :param stimuliname = the full stimliname (string) including the 2 digits at the beginning and .jpeg at the end
-        :param unique_user = a string: p1, p2 ,......... p9.
-        :param length_scanpath a integer, which length scanpath you want to retrieve
-        :returns returns 2 arrays, one with the x cooridnates and 1 with the y coordinates
-        """
-        x1, y1 = self.get_subscanpaths(stimuliname, unique_user)
-        x2 = []
-        y2 = []
-
-        for i in x1:
-            if len(i) == length_scanpath:
-                x2.append(i)
-
-        for j in y1:
-            if len(j) == length_scanpath:
-                y2.append(j)
-
-        return x2, y2
-
 
 class Current_Graphs:
     '''
-    A class to store all the current graphs
+    A class to store all the current graphs,
+    Major suspect in the ongoing investigating to why the tool sometimes
+        gets stuck in a certain panel / doesn't want to update anymore (updating never stops calculating nor shows)
 
     :author: Yuri Maas
     '''
     def __init__(self):
+        # On tool start, there shouldn't be any graphs loaded in.
         self.__graphs = [None, None, None, None]
 
     def get_graph(self, graph_id):
