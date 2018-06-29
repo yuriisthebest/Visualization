@@ -3,7 +3,6 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
-import plotly.graph_objs as go
 import flask
 import os
 import time
@@ -20,7 +19,6 @@ defaultmap = '03_Bordeaux_S1.jpg'
 
 
 app = dash.Dash()
-
 app.config['suppress_callback_exceptions'] = True
 
 app.layout = html.Div([
